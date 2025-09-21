@@ -1,14 +1,27 @@
 // src/App.jsx
 import { createSignal, onMount } from "solid-js";
 
+// API base URL
+const getApiBase = () => {
+	const protocol = window.location.protocol;
+	const hostname = window.location.hostname;
+	if (hostname === 'localhost' || hostname === '127.0.0.1') {
+		return `${protocol}//localhost:3001/api`;
+	}
+	return `${protocol}//${hostname}/api`;
+};
+
+const API_BASE = getApiBase();
+
 export default function App() {
+
 	const [notes, setNotes] = createSignal([]);
 	const [newText, setNewText] = createSignal("");
 
 	// Fetch notes from backend
 	const fetchNotes = async () => {
 		try {
-			const res = await fetch("http://localhost:3001/api/notes");
+			const res = await fetch(`${API_BASE}/notes`);
 			const data = await res.json();
 			setNotes(data);
 		} catch (err) {
@@ -20,7 +33,7 @@ export default function App() {
 	const addNote = async () => {
 		if (!newText().trim()) return; // prevent empty notes
 		try {
-			const res = await fetch("http://localhost:3001/api/notes", {
+			const res = await fetch(`${API_BASE}//notes`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ text: newText() }),
@@ -36,7 +49,7 @@ export default function App() {
 	// Delete a note
 	const deleteNote = async (id) => {
 		try {
-			await fetch(`http://localhost:3001/api/notes/${id}`, { method: "DELETE" });
+			await fetch(`${API_BASE}/notes/${id}`, { method: "DELETE" });
 			setNotes(notes().filter(n => n.id !== id));
 		} catch (err) {
 			console.error("Error deleting note:", err);
