@@ -1,21 +1,24 @@
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { sqliteTable, integer, text } from 'drizzle-orm/sqlite-core';
-
-// Define Notes table
-export const notesTable = sqliteTable('notes', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  text: text('text'),
-});
+import { notesTable } from './schema.js';
+import { createTables } from './migrations.js';
+import { seedDatabase } from './seed.js';
 
 // Connect to SQLite database
 const sqlite = new Database('./db.sqlite');
 export const db = drizzle(sqlite);
 
-// Create table if it doesn't exist
-sqlite.prepare(`
-  CREATE TABLE IF NOT EXISTS notes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    text TEXT
-  )
-`).run();
+// Initialize database function
+export const initializeDatabase = async () => {  
+  try {
+    createTables(sqlite);
+    await seedDatabase(db);
+    console.log('Database initialization completed.');
+  } catch (error) {
+    console.error('Database initialization failed:', error);
+    process.exit(1);
+  }
+};
+
+// Export schema for use in other files
+export { notesTable };

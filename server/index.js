@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import { db, notesTable } from './db/db.js';
+import { db, notesTable, initializeDatabase } from './db/db.js';
 import { eq } from 'drizzle-orm';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -12,11 +12,11 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Initialize database
+await initializeDatabase();
+
 app.use(cors());
 app.use(bodyParser.json());
-
-// Serve static files from the dist directory (built frontend)
-app.use(express.static(path.join(__dirname, '../dist')));
 
 ///////////////////////////////////
 // CRUD routes
@@ -70,6 +70,9 @@ app.get('/health', (req, res) => {
 	res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Serve static files from the dist directory (built frontend) - AFTER API routes
+app.use(express.static(path.join(__dirname, '../dist')));
+
 // Error handling middleware
 app.use((err, req, res, next) => {
 	console.error('Server error:', err);
@@ -79,6 +82,4 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
 	console.log(`Server running on http://localhost:${PORT}`);
-	console.log(`Health check available at http://localhost:${PORT}/health`);
-	console.log(`API available at http://localhost:${PORT}/api/notes`);
 });
