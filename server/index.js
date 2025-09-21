@@ -3,12 +3,20 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import { db, notesTable } from './db/db.js';
 import { eq } from 'drizzle-orm';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(bodyParser.json());
+
+// Serve static files from the dist directory (built frontend)
+app.use(express.static(path.join(__dirname, '../dist')));
 
 ///////////////////////////////////
 // CRUD routes
@@ -56,6 +64,11 @@ app.delete('/api/notes/:id', async (req, res) => {
 
 /////////////////////////////////
 // CRUD routes end
+
+// Catch-all handler: send back React's index.html file for SPA routing
+app.get('*', (req, res) => {
+	res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {

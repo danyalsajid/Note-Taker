@@ -8,7 +8,10 @@
 		"dev:server": "nodemon server/index.js",
 		"dev:all": "concurrently \"npm run dev\" \"npm run dev:server\"",
 		"build": "vite build",
-		"serve": "vite preview"
+		"serve": "vite preview",
+		"start": "node server/index.js",
+		"railway:build": "npm install && npm run build",
+		"railway:start": "npm run start"
 	},
 	"license": "MIT",
 	"devDependencies": {
