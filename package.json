@@ -4,11 +4,11 @@
 	"description": "",
 	"type": "module",
 	"scripts": {
-	"dev": "vite",
-	"dev:server": "nodemon server/index.js",
-	"dev:all": "concurrently \"npm run dev\" \"npm run dev:server\"",
-	"build": "vite build",
-	"serve": "vite preview"
+		"dev": "vite",
+		"dev:server": "nodemon server/index.js",
+		"dev:all": "concurrently \"npm run dev\" \"npm run dev:server\"",
+		"build": "vite build",
+		"serve": "vite preview"
 	},
 	"license": "MIT",
 	"devDependencies": {
@@ -22,9 +22,11 @@
 	},
 	"dependencies": {
 		"@popperjs/core": "^2.11.8",
+		"better-sqlite3": "^12.2.0",
 		"body-parser": "^2.2.0",
 		"bootstrap": "^5.3.8",
 		"cors": "^2.8.5",
+		"drizzle-orm": "^0.44.5",
 		"express": "^5.1.0",
 		"solid-js": "^1.9.5"
 	}
