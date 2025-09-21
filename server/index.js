@@ -65,12 +65,35 @@ app.delete('/api/notes/:id', async (req, res) => {
 /////////////////////////////////
 // CRUD routes end
 
-// Catch-all handler: send back React's index.html file for SPA routing
-app.get('*', (req, res) => {
-	res.sendFile(path.join(__dirname, '../dist/index.html'));
+// Health check endpoint for Railway
+app.get('/health', (req, res) => {
+	res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Catch-all handler: send back SolidJS index.html file for SPA routing
+app.get('/*', (req, res) => {
+	// Don't serve index.html for API routes
+	if (req.path.startsWith('/api/')) {
+		return res.status(404).json({ error: 'API endpoint not found' });
+	}
+	
+	res.sendFile(path.join(__dirname, '../dist/index.html'), (err) => {
+		if (err) {
+			console.error('Error serving index.html:', err);
+			res.status(500).send('Error loading page');
+		}
+	});
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+	console.error('Server error:', err);
+	res.status(500).json({ error: 'Internal server error' });
 });
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
 	console.log(`Server running on http://localhost:${PORT}`);
+	console.log(`Health check available at http://localhost:${PORT}/health`);
+	console.log(`API available at http://localhost:${PORT}/api/notes`);
 });
