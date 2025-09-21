@@ -96,6 +96,4 @@ The SQLite database file (`db.sqlite`) is included in the repository for simplic
 │   └── index.js       # Main server file
 ├── dist/              # Built frontend (generated)
 ├── package.json       # Dependencies and scripts
-├── vite.config.js     # Vite configuration
-└── railway.toml       # Railway deployment config
-```
+├── vite.config.js     # Vite configuration```
