@@ -1,10 +1,15 @@
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import { db, notesTable, initializeDatabase } from './db/db.js';
 import { eq } from 'drizzle-orm';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+// Database 
+import { db } from './db/connection.js';
+import { notes } from './db/schema.js';
+import { initializeDatabase } from './db/database.js';
+import { hierarchyNodes } from './db/schema.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,17 +26,28 @@ app.use(bodyParser.json());
 ///////////////////////////////////
 // CRUD routes
 
+// Get all data
+app.get('/api/data', async (req, res) => {
+	try {
+		const organizations = await db.select().from(hierarchyNodes).where(eq(hierarchyNodes.type, 'organisation'));
+		res.json(organizations);
+	} catch (error) {
+		console.error('Error fetching organizations:', error);
+		res.status(500).json({ error: 'Failed to fetch organizations' });
+	}
+});
+
 // Get all notes
 app.get('/api/notes', async (req, res) => {
-	const notes = await db.select().from(notesTable);
-	res.json(notes);
+	const allNotes = await db.select().from(notes);
+	res.json(allNotes);
 });
 
 // Create a new note
 app.post('/api/notes', async (req, res) => {
 	const { text } = req.body;
 	const [newNote] = await db
-		.insert(notesTable)
+		.insert(notes)
 		.values({ text })
 		.returning(); // returns the inserted row
 	res.json(newNote);
