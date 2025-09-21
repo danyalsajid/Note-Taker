@@ -70,21 +70,6 @@ app.get('/health', (req, res) => {
 	res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Catch-all handler: send back SolidJS index.html file for SPA routing
-app.get('/*', (req, res) => {
-	// Don't serve index.html for API routes
-	if (req.path.startsWith('/api/')) {
-		return res.status(404).json({ error: 'API endpoint not found' });
-	}
-	
-	res.sendFile(path.join(__dirname, '../dist/index.html'), (err) => {
-		if (err) {
-			console.error('Error serving index.html:', err);
-			res.status(500).send('Error loading page');
-		}
-	});
-});
-
 // Error handling middleware
 app.use((err, req, res, next) => {
 	console.error('Server error:', err);
