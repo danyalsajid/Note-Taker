@@ -32,6 +32,18 @@ export const notes = sqliteTable('notes', {
 	updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+// File attachments table
+export const attachments = sqliteTable('attachments', {
+	id: text('id').primaryKey(),
+	noteId: text('note_id').notNull().references(() => notes.id, { onDelete: 'cascade' }),
+	filename: text('filename').notNull(),
+	originalName: text('original_name').notNull(),
+	mimeType: text('mime_type').notNull(),
+	size: integer('size').notNull(),
+	path: text('path').notNull(),
+	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
 // Hierarchy closure table for relationships
 export const hierarchyClosure = sqliteTable('hierarchy_closure', {
 	ancestor: text('ancestor').notNull().references(() => hierarchyNodes.id, { onDelete: 'cascade' }),

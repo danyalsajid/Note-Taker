@@ -1,6 +1,21 @@
 import { createSignal, createMemo } from 'solid-js';
 import { authApiCall } from './auth';
 
+// API base URL - Dynamic based on current host and protocol
+const getApiBase = () => {
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname;
+  
+  // If deployed 
+  if (hostname.includes('.railway.app')) {
+    return `${protocol}//${hostname}/api`;
+  }
+  
+  // For local network
+  return `${protocol}//${hostname}:3001/api`;
+};
+const API_BASE = getApiBase();
+
 // // API base URL - Dynamic based on current host and protocol
 // const getApiBase = () => {
 //   // Use the same protocol as the current page (HTTP or HTTPS)
@@ -405,7 +420,7 @@ export const addItem = async (type, name, parentId = null) => {
   }
 };
 
-export const addNote = async (content, attachedToId, attachedToType, tags = []) => {
+export const addNote = async (content, attachedToId, attachedToType, tags = [], files = []) => {  
   try {
     setLoading(true);
     
@@ -416,6 +431,36 @@ export const addNote = async (content, attachedToId, attachedToType, tags = []) 
           method: 'POST',
           body: JSON.stringify({ content, attachedToId, attachedToType, tags })
         });
+        
+        // If there are files to upload, upload them
+        if (files && files.length > 0) {
+          console.log(`Uploading ${files.length} files for note ${newNote.id}`);
+          for (const file of files) {
+            console.log(`Uploading file: ${file.name}, size: ${file.size}`);
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const token = localStorage.getItem('healthcare_token');
+            const response = await fetch(`${API_BASE}/notes/${newNote.id}/attachments`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`
+              },
+              body: formData
+            });
+            
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error(`Failed to upload file: ${file.name}`, response.status, errorText);
+              // Continue with other files even if one fails
+            } else {
+              const result = await response.json();
+              console.log(`Successfully uploaded file: ${file.name}`, result);
+            }
+          }
+        } else {
+          console.log('No files to upload');
+        }
         
         // Update local state
         const currentData = data();
@@ -463,13 +508,45 @@ export const addNote = async (content, attachedToId, attachedToType, tags = []) 
   }
 };
 
-export const updateNote = async (noteId, content, tags = []) => {
+export const updateNote = async (noteId, content, tags = [], files = []) => {
   try {
     setLoading(true);
+    
+    // First update the note content and tags
     const updatedNote = await apiCall(`/notes/${noteId}`, {
       method: 'PUT',
       body: JSON.stringify({ content, tags })
     });
+    
+    // If there are files to upload, upload them
+    if (files && files.length > 0) {
+      console.log(`Uploading ${files.length} files for note ${noteId} (update)`);
+      for (const file of files) {
+        console.log(`Uploading file: ${file.name}, size: ${file.size}`);
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const token = localStorage.getItem('healthcare_token');
+        const response = await fetch(`${API_BASE}/notes/${noteId}/attachments`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Failed to upload file: ${file.name}`, response.status, errorText);
+          throw new Error(`Failed to upload file: ${file.name}`);
+        } else {
+          const result = await response.json();
+          console.log(`Successfully uploaded file: ${file.name}`, result);
+        }
+      }
+    } else {
+      console.log('No files to upload in update');
+    }
     
     // Update local state
     const currentData = data();

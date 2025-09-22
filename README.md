@@ -17,12 +17,14 @@ For the backend I am using nodejs with express and sqlite with drizzle ORM.
 - Search notes.
 - AI assisted summari of notes.
 - Simple roles/permision (admin/clinician)
+- Offline notes capture
 
 ## Technical features:
 - Basic auth with JWT authentication
 - Hierarchical data management with sqlite and drizzle ORM with closure table
 - Responsive design with bootstrap
 - AI integration with Anthropic Claude
+- Offline notes capture through browser local storage
 
 ### Authentication & Security
 - JWT-based authentication with bcrypt password hashing

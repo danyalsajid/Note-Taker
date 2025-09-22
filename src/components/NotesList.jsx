@@ -2,6 +2,7 @@ import { For, Show, createSignal } from 'solid-js';
 import { updateNote, deleteNote } from '../store';
 import EditNoteModal from './EditNoteModal';
 import DeleteNoteConfirmationModal from './DeleteNoteConfirmationModal';
+import AttachmentsList from './AttachmentsList';
 
 function NotesList(props) {
   const [showEditModal, setShowEditModal] = createSignal(false);
@@ -14,9 +15,9 @@ function NotesList(props) {
     setShowEditModal(true);
   };
 
-  const handleEditSubmit = async (content, tags = []) => {
+  const handleEditSubmit = async (content, tags = [], files = []) => {
     try {
-      await updateNote(selectedNote().id, content, tags);
+      await updateNote(selectedNote().id, content, tags, files);
       setShowEditModal(false);
       setSelectedNote(null);
     } catch (error) {
@@ -120,6 +121,8 @@ function NotesList(props) {
                     </For>
                   </div>
                 </Show>
+                
+                <AttachmentsList noteId={note.id} />
                 
               </div>
             </div>

@@ -6,12 +6,14 @@ import { randomUUID } from 'crypto';
 import { eq, and, or } from 'drizzle-orm';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import multer from 'multer';
+import fs from 'fs';
 import Anthropic from '@anthropic-ai/sdk';
 
 
 // Database 
 import { db } from './db/connection.js';
-import { notes, users, hierarchyNodes, hierarchyClosure } from './db/schema.js';
+import { notes, users, hierarchyNodes, hierarchyClosure, attachments } from './db/schema.js';
 import { initializeDatabase } from './db/database.js';
 
 
@@ -41,6 +43,43 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '..', 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 25 * 1024 * 1024, // 25MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow common file types
+    const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|txt|csv|xlsx|xls|ppt|pptx/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only common file types are allowed (images, PDFs, documents)'));
+    }
+  }
+});
+
+// Serve uploaded files
+app.use('/api/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // Serve static files from dist directory in production
 if (process.env.NODE_ENV === 'production') {
@@ -547,6 +586,129 @@ app.post('/api/notes', requireAuth, async (req, res) => {
     res.status(201).json(responseNote);
   } catch (error) {
     res.status(500).json({ error: 'Failed to create note' });
+  }
+});
+
+// Upload file attachment for a note
+app.post('/api/notes/:noteId/attachments', requireAuth, upload.single('file'), async (req, res) => {
+  try {
+    const { noteId } = req.params;
+    
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    
+    // Check if note exists
+    const note = await db.select().from(notes).where(eq(notes.id, noteId)).limit(1);
+    if (note.length === 0) {
+      // Clean up uploaded file if note doesn't exist
+      fs.unlinkSync(req.file.path);
+      return res.status(404).json({ error: 'Note not found' });
+    }
+    
+    const attachment = {
+      id: generateId(),
+      noteId,
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+      path: req.file.path,
+      createdAt: new Date().toISOString()
+    };
+    
+    await db.insert(attachments).values(attachment);
+    
+    res.status(201).json({
+      id: attachment.id,
+      filename: attachment.filename,
+      originalName: attachment.originalName,
+      mimeType: attachment.mimeType,
+      size: attachment.size,
+      createdAt: attachment.createdAt
+    });
+  } catch (error) {
+    console.error('File upload error:', error);
+    // Clean up uploaded file on error
+    if (req.file) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ error: 'Failed to upload file' });
+  }
+});
+
+// Get attachments for a note
+app.get('/api/notes/:noteId/attachments', requireAuth, async (req, res) => {
+  try {
+    const { noteId } = req.params;
+    
+    const noteAttachments = await db.select({
+      id: attachments.id,
+      filename: attachments.filename,
+      originalName: attachments.originalName,
+      mimeType: attachments.mimeType,
+      size: attachments.size,
+      createdAt: attachments.createdAt
+    }).from(attachments).where(eq(attachments.noteId, noteId));
+    
+    res.json(noteAttachments);
+  } catch (error) {
+    console.error('Get attachments error:', error);
+    res.status(500).json({ error: 'Failed to fetch attachments' });
+  }
+});
+
+// Download attachment
+app.get('/api/attachments/:attachmentId/download', requireAuth, async (req, res) => {
+  try {
+    const { attachmentId } = req.params;
+    
+    const attachment = await db.select().from(attachments).where(eq(attachments.id, attachmentId)).limit(1);
+    
+    if (attachment.length === 0) {
+      return res.status(404).json({ error: 'Attachment not found' });
+    }
+    
+    const file = attachment[0];
+    
+    if (!fs.existsSync(file.path)) {
+      return res.status(404).json({ error: 'File not found on disk' });
+    }
+    
+    res.setHeader('Content-Disposition', `attachment; filename="${file.originalName}"`);
+    res.setHeader('Content-Type', file.mimeType);
+    res.sendFile(path.resolve(file.path));
+  } catch (error) {
+    console.error('Download attachment error:', error);
+    res.status(500).json({ error: 'Failed to download attachment' });
+  }
+});
+
+// Delete attachment
+app.delete('/api/attachments/:attachmentId', requireAuth, async (req, res) => {
+  try {
+    const { attachmentId } = req.params;
+    
+    const attachment = await db.select().from(attachments).where(eq(attachments.id, attachmentId)).limit(1);
+    
+    if (attachment.length === 0) {
+      return res.status(404).json({ error: 'Attachment not found' });
+    }
+    
+    const file = attachment[0];
+    
+    // Delete from database
+    await db.delete(attachments).where(eq(attachments.id, attachmentId));
+    
+    // Delete file from disk
+    if (fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
+    }
+    
+    res.json({ message: 'Attachment deleted successfully' });
+  } catch (error) {
+    console.error('Delete attachment error:', error);
+    res.status(500).json({ error: 'Failed to delete attachment' });
   }
 });
 

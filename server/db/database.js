@@ -1,5 +1,5 @@
 import { db, sqlite } from './connection.js';
-import { notes, users, hierarchyNodes, hierarchyClosure } from './schema.js';
+import { notes, users, hierarchyNodes, hierarchyClosure, attachments } from './schema.js';
 import { seedDatabase } from './seed.js';
 
 // Initialize database function
@@ -53,6 +53,20 @@ export const initializeDatabase = async () => {
       )
     `);
 
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS attachments (
+        id TEXT PRIMARY KEY,
+        note_id TEXT NOT NULL,
+        filename TEXT NOT NULL,
+        original_name TEXT NOT NULL,
+        mime_type TEXT NOT NULL,
+        size INTEGER NOT NULL,
+        path TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
+      )
+    `);
+
     console.log('Tables created successfully!');
     
     await seedDatabase(db);
@@ -64,4 +78,4 @@ export const initializeDatabase = async () => {
 };
 
 // Export schema for use in other files
-export { notes, users, hierarchyNodes, hierarchyClosure };
+export { notes, users, hierarchyNodes, hierarchyClosure, attachments };

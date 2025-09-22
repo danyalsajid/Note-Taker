@@ -13,15 +13,16 @@ function AddNoteForm(props) {
     setShowAddModal(false);
   });
 
-  const handleSubmit = async (content, tags = []) => {
+  const handleSubmit = async (content, tags = [], files = []) => {
     try {
-      await addNote(content, props.attachedToId, props.attachedToType, tags);
+      const note = await addNote(content, props.attachedToId, props.attachedToType, tags, files);
       setShowAddModal(false);
     } catch (error) {
       console.error('Failed to add note:', error);
       // You could show an error message to the user here
     }
   };
+
 
   const handleClose = () => {
     setShowAddModal(false);

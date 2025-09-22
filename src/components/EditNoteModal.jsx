@@ -1,10 +1,13 @@
-import { createSignal, createEffect, For } from 'solid-js';
+import { createSignal, createEffect, For, Show } from 'solid-js';
 import Modal from './Modal';
+import AttachmentsList from './AttachmentsList';
 
 function EditNoteModal(props) {
   const [content, setContent] = createSignal(props.currentContent || '');
   const [tags, setTags] = createSignal([]);
   const [newTag, setNewTag] = createSignal('');
+  const [selectedFiles, setSelectedFiles] = createSignal([]);
+  const [uploading, setUploading] = createSignal(false);
   
   // Update content and tags when note changes
   createEffect(() => {
@@ -14,13 +17,21 @@ function EditNoteModal(props) {
     }
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (content().trim()) {
-      props.onSubmit(content().trim(), tags());
-      setContent('');
-      setTags([]);
-      setNewTag('');
+      setUploading(true);
+      try {
+        await props.onSubmit(content().trim(), tags(), selectedFiles());
+        setContent('');
+        setTags([]);
+        setNewTag('');
+        setSelectedFiles([]);
+      } catch (error) {
+        console.error('Failed to update note:', error);
+      } finally {
+        setUploading(false);
+      }
     }
   };
 
@@ -28,6 +39,7 @@ function EditNoteModal(props) {
     setContent(props.currentContent || '');
     setTags(props.note?.tags || []);
     setNewTag('');
+    setSelectedFiles([]);
     props.onClose();
   };
   
@@ -48,6 +60,45 @@ function EditNoteModal(props) {
       e.preventDefault();
       addTag();
     }
+  };
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    setSelectedFiles(files);
+  };
+
+  const removeFile = (index) => {
+    const files = selectedFiles();
+    files.splice(index, 1);
+    setSelectedFiles([...files]);
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (fileName) => {
+    const ext = fileName.split('.').pop().toLowerCase();
+    const icons = {
+      pdf: 'fas fa-file-pdf text-danger',
+      doc: 'fas fa-file-word text-primary',
+      docx: 'fas fa-file-word text-primary',
+      xls: 'fas fa-file-excel text-success',
+      xlsx: 'fas fa-file-excel text-success',
+      ppt: 'fas fa-file-powerpoint text-warning',
+      pptx: 'fas fa-file-powerpoint text-warning',
+      jpg: 'fas fa-file-image text-info',
+      jpeg: 'fas fa-file-image text-info',
+      png: 'fas fa-file-image text-info',
+      gif: 'fas fa-file-image text-info',
+      txt: 'fas fa-file-alt text-secondary',
+      csv: 'fas fa-file-csv text-success'
+    };
+    return icons[ext] || 'fas fa-file text-secondary';
   };
   
 
@@ -151,6 +202,63 @@ function EditNoteModal(props) {
               Press Enter or click + to add tags. Tags help organize and filter your notes.
             </div>
           </div>
+
+          <Show when={props.note}>
+            <div class="mb-3">
+              <label class="form-label fw-medium">
+                <i class="fas fa-paperclip me-2"></i>
+                Current Attachments
+              </label>
+              <AttachmentsList noteId={props.note.id} />
+            </div>
+          </Show>
+
+          <div class="mb-3">
+            <label class="form-label fw-medium">
+              <i class="fas fa-paperclip me-2"></i>
+              Add New Attachments (Optional)
+            </label>
+            <input
+              type="file"
+              class="form-control"
+              multiple
+              onChange={handleFileSelect}
+              accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.xls,.ppt,.pptx,.jpg,.jpeg,.png,.gif"
+            />
+            <div class="form-text">
+              <i class="fas fa-info-circle me-1"></i>
+              Supported formats: PDF, Word, Excel, PowerPoint, Images, Text files (Max 25MB each)
+            </div>
+            
+            <Show when={selectedFiles().length > 0}>
+              <div class="mt-3">
+                <div class="fw-medium mb-2">New Files to Upload:</div>
+                <div class="list-group">
+                  <For each={selectedFiles()}>
+                    {(file, index) => (
+                      <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                          <i class={getFileIcon(file.name)} style="margin-right: 0.5rem;"></i>
+                          <div>
+                            <div class="fw-medium">{file.name}</div>
+                            <small class="text-muted">{formatFileSize(file.size)}</small>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          class="btn btn-outline-danger btn-sm"
+                          onClick={() => removeFile(index())}
+                          title="Remove file"
+                        >
+                          <i class="fas fa-times"></i>
+                        </button>
+                      </div>
+                    )}
+                  </For>
+                </div>
+              </div>
+            </Show>
+          </div>
         </div>
         
         <div class="modal-footer">
@@ -158,9 +266,18 @@ function EditNoteModal(props) {
             <i class="fas fa-times me-2"></i>
             Cancel
           </button>
-          <button type="submit" class="btn btn-primary">
-            <i class="fas fa-save me-2"></i>
-            Save Changes
+          <button type="submit" class="btn btn-primary" disabled={uploading()}>
+            {uploading() ? (
+              <>
+                <i class="fas fa-spinner fa-spin me-2"></i>
+                Saving...
+              </>
+            ) : (
+              <>
+                <i class="fas fa-save me-2"></i>
+                Save Changes
+              </>
+            )}
           </button>
         </div>
       </form>
