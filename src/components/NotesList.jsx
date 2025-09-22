@@ -69,6 +69,12 @@ function NotesList(props) {
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-2">
                   <div class="text-muted small">
+                    <Show when={note.isOffline}>
+                      <span class="badge bg-warning text-dark me-2">
+                        <i class="fas fa-wifi-slash me-1"></i>
+                        Offline
+                      </span>
+                    </Show>
                     <i class="fas fa-clock me-1"></i>
                     Created: {formatDate(note.createdAt)}
                     {note.updatedAt !== note.createdAt && (

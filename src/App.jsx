@@ -5,7 +5,7 @@ import AuthContainer from './components/AuthContainer';
 import SearchBar from './components/SearchBar';
 import TagFilter from './components/TagFilter';
 import AddItemModal from './components/AddItemModal';
-import { selectedItem, selectedType, setSelectedItem, setSelectedType, loadData, loading, error, addItem } from './store';
+import { selectedItem, selectedType, setSelectedItem, setSelectedType, loadData, loading, error, addItem, isOnline, offlineNotes, syncOfflineNotes, getOfflineNotesCount } from './store';
 import { isAuthenticated, user, logout } from './auth';
 
 const [isMobile, setIsMobile] = createSignal(false);
@@ -89,6 +89,14 @@ function App() {
     setAddModalType(null);
   };
 
+  const handleSync = async () => {
+    try {
+      await syncOfflineNotes();
+    } catch (error) {
+      console.error('Failed to sync offline notes:', error);
+    }
+  };
+
   return (
     <Show 
       when={isAuthenticated()} 
@@ -109,6 +117,27 @@ function App() {
               </div>
             </div>
             <div class="header-user">
+              {/* Offline Status and Sync */}
+              <div class="d-flex align-items-center gap-2 me-3">
+                <Show when={!isOnline()}>
+                  <span class="badge bg-warning text-dark">
+                    <i class="fas fa-wifi-slash me-1"></i>
+                    Offline
+                  </span>
+                </Show>
+                <Show when={getOfflineNotesCount() > 0}>
+                  <button 
+                    class="btn btn-outline-primary btn-sm"
+                    onClick={handleSync}
+                    disabled={!isOnline()}
+                    title={`Sync ${getOfflineNotesCount()} offline notes`}
+                  >
+                    <i class="fas fa-sync-alt me-1"></i>
+                    {getOfflineNotesCount()}
+                  </button>
+                </Show>
+              </div>
+              
               <div class="user-info">
                 <div class="user-avatar">
                   {getUserInitials()}

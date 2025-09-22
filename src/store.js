@@ -44,6 +44,40 @@ const [isSearching, setIsSearching] = createSignal(false);
 const [selectedTags, setSelectedTags] = createSignal([]);
 const [availableTags, setAvailableTags] = createSignal([]);
 
+// Offline state
+const [offlineNotes, setOfflineNotes] = createSignal([]);
+const [isOnline, setIsOnline] = createSignal(navigator.onLine);
+
+// Offline storage utilities
+const OFFLINE_NOTES_KEY = 'note-taker-offline-notes';
+
+const saveOfflineNotes = (notes) => {
+  try {
+    localStorage.setItem(OFFLINE_NOTES_KEY, JSON.stringify(notes));
+  } catch (err) {
+    console.error('Failed to save offline notes:', err);
+  }
+};
+
+const loadOfflineNotes = () => {
+  try {
+    const stored = localStorage.getItem(OFFLINE_NOTES_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (err) {
+    console.error('Failed to load offline notes:', err);
+    return [];
+  }
+};
+
+const clearOfflineNotes = () => {
+  try {
+    localStorage.removeItem(OFFLINE_NOTES_KEY);
+    setOfflineNotes([]);
+  } catch (err) {
+    console.error('Failed to clear offline notes:', err);
+  }
+};
+
 // API helper functions, uses authenticated API calls
 const apiCall = async (endpoint, options = {}) => {
   try {
@@ -55,6 +89,16 @@ const apiCall = async (endpoint, options = {}) => {
   }
 };
 
+// Network status monitoring
+window.addEventListener('online', () => {
+  setIsOnline(true);
+  syncOfflineNotes();
+});
+
+window.addEventListener('offline', () => {
+  setIsOnline(false);
+});
+
 // Load initial data from API
 const loadData = async () => {
   try {
@@ -63,6 +107,9 @@ const loadData = async () => {
     setData(apiData);
     // Update available tags after loading data
     updateAvailableTags();
+    // Load offline notes
+    const offline = loadOfflineNotes();
+    setOfflineNotes(offline);
   } catch (err) {
     console.error('Failed to load data:', err);
     // Don't set error for authentication issues
@@ -77,6 +124,9 @@ const loadData = async () => {
       episodes: [],
       notes: []
     });
+    // Still load offline notes even if API fails
+    const offline = loadOfflineNotes();
+    setOfflineNotes(offline);
   } finally {
     setLoading(false);
   }
@@ -98,9 +148,16 @@ export const getChildItems = (parentId, childType) => {
 };
 
 export const getNotesForItem = (itemId, itemType) => {
+  // Get online notes
   let notes = data().notes.filter(note => 
     note.attachedToId === itemId && note.attachedToType === itemType
   );
+  
+  // Add offline notes for this item
+  const offline = offlineNotes().filter(note => 
+    note.attachedToId === itemId && note.attachedToType === itemType
+  );
+  notes = [...notes, ...offline];
   
   // Apply tag filter if any tags are selected
   const tags = selectedTags();
@@ -127,7 +184,8 @@ export const searchAllNotes = (query) => {
   setIsSearching(true);
 
   try {
-    const allNotes = data().notes;
+    // Search both online and offline notes
+    const allNotes = [...data().notes, ...offlineNotes()];
     const matchingNotes = allNotes.filter(note => 
       note.content.toLowerCase().includes(normalizedQuery)
     );
@@ -141,7 +199,8 @@ export const searchAllNotes = (query) => {
         ...note,
         attachedItem,
         breadcrumb,
-        hierarchy: breadcrumb.map(b => b.name).join(' > ')
+        hierarchy: breadcrumb.map(b => b.name).join(' > '),
+        isOffline: note.isOffline || false
       };
     });
 
@@ -164,7 +223,8 @@ export const clearSearch = () => {
 
 // Tag filtering functions
 export const updateAvailableTags = () => {
-  const allNotes = data().notes;
+  // Include both online and offline notes for tag extraction
+  const allNotes = [...data().notes, ...offlineNotes()];
   const tagSet = new Set();
   
   allNotes.forEach(note => {
@@ -190,7 +250,8 @@ export const clearTagFilters = () => {
 };
 
 export const getAllNotesWithTags = () => {
-  let notes = data().notes;
+  // Include both online and offline notes
+  let notes = [...data().notes, ...offlineNotes()];
   
   // Apply tag filter if any tags are selected
   const tags = selectedTags();
@@ -264,6 +325,58 @@ export const getBreadcrumb = (itemId, itemType) => {
   return breadcrumb;
 };
 
+// Sync offline notes when back online
+export const syncOfflineNotes = async () => {
+  const offline = offlineNotes();
+  if (offline.length === 0 || !isOnline()) {
+    return;
+  }
+  
+  console.log(`Syncing ${offline.length} offline notes...`);
+  const syncedNotes = [];
+  const failedNotes = [];
+  
+  for (const note of offline) {
+    try {
+      const { id, isOffline, ...noteData } = note;
+      const syncedNote = await apiCall('/notes', {
+        method: 'POST',
+        body: JSON.stringify(noteData)
+      });
+      syncedNotes.push(syncedNote);
+    } catch (err) {
+      console.error('Failed to sync note:', err);
+      failedNotes.push(note);
+    }
+  }
+  
+  if (syncedNotes.length > 0) {
+    // Update online notes
+    const currentData = data();
+    setData({
+      ...currentData,
+      notes: [...currentData.notes, ...syncedNotes]
+    });
+    
+    // Keep only failed notes offline
+    setOfflineNotes(failedNotes);
+    saveOfflineNotes(failedNotes);
+    
+    // Update available tags
+    updateAvailableTags();
+    
+    console.log(`Successfully synced ${syncedNotes.length} notes, ${failedNotes.length} failed`);
+  }
+};
+
+// Get offline notes count
+export const getOfflineNotesCount = () => offlineNotes().length;
+
+// Check if a note is offline
+export const isNoteOffline = (noteId) => {
+  return offlineNotes().some(note => note.id === noteId);
+};
+
 // CRUD operations
 export const addItem = async (type, name, parentId = null) => {
   console.log('Store - addItem called with:', { type, name, parentId });
@@ -295,22 +408,53 @@ export const addItem = async (type, name, parentId = null) => {
 export const addNote = async (content, attachedToId, attachedToType, tags = []) => {
   try {
     setLoading(true);
-    const newNote = await apiCall('/notes', {
-      method: 'POST',
-      body: JSON.stringify({ content, attachedToId, attachedToType, tags })
-    });
     
-    // Update local state
-    const currentData = data();
-    setData({
-      ...currentData,
-      notes: [...currentData.notes, newNote]
-    });
+    // Try to save online first
+    if (isOnline()) {
+      try {
+        const newNote = await apiCall('/notes', {
+          method: 'POST',
+          body: JSON.stringify({ content, attachedToId, attachedToType, tags })
+        });
+        
+        // Update local state
+        const currentData = data();
+        setData({
+          ...currentData,
+          notes: [...currentData.notes, newNote]
+        });
+        
+        // Update available tags
+        updateAvailableTags();
+        
+        return newNote;
+      } catch (apiErr) {
+        console.warn('API call failed, saving offline:', apiErr);
+        // Fall through to offline save
+      }
+    }
+    
+    // Save offline if API fails or we're offline
+    const offlineNote = {
+      id: `offline-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      content,
+      attachedToId,
+      attachedToType,
+      tags,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isOffline: true
+    };
+    
+    const currentOfflineNotes = offlineNotes();
+    const updatedOfflineNotes = [...currentOfflineNotes, offlineNote];
+    setOfflineNotes(updatedOfflineNotes);
+    saveOfflineNotes(updatedOfflineNotes);
     
     // Update available tags
     updateAvailableTags();
     
-    return newNote;
+    return offlineNote;
   } catch (err) {
     console.error('Failed to add note:', err);
     throw err;
@@ -459,5 +603,8 @@ export {
   selectedTags,
   setSelectedTags,
   availableTags,
-  setAvailableTags
+  setAvailableTags,
+  offlineNotes,
+  isOnline,
+  clearOfflineNotes
 };
