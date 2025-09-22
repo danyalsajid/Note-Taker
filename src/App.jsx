@@ -1,4 +1,5 @@
 import { createSignal, createEffect, onMount, Show } from "solid-js";
+import apiService from "./services/api";
 import AuthContainer from "./components/AuthContainer";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
@@ -89,10 +90,30 @@ export default function App() {
     setShowAddChildModal(true);
   };
 
-  const handleSaveChild = (newItem, parentItem) => {
-    console.log("Adding child:", newItem, "to parent:", parentItem);
-    // Implement add child functionality
-    setShowAddChildModal(false);
+  const handleSaveChild = async (newItem, parentItem) => {
+    try {
+      console.log("Adding child:", newItem, "to parent:", parentItem);
+      
+      const nodeData = {
+        name: newItem.name,
+        type: newItem.type,
+        parentId: parentItem?.id || null
+      };
+      
+      await apiService.createHierarchyNode(nodeData);
+      
+      // Refresh the sidebar data by triggering a re-render
+      // The sidebar will reload its data automatically
+      setShowAddChildModal(false);
+      
+      // Force sidebar refresh by updating selected item
+      if (parentItem) {
+        setSelectedItem({ ...parentItem });
+      }
+    } catch (error) {
+      console.error("Failed to add child:", error);
+      alert(error.message || "Failed to add item. Please try again.");
+    }
   };
 
   // Note management handlers
@@ -102,9 +123,27 @@ export default function App() {
   };
 
   const handleSaveNote = async (note) => {
-    console.log("Saving note:", note);
-    // Implement save note functionality
-    setShowAddNoteModal(false);
+    try {
+      console.log("Saving note:", note);
+      
+      const noteData = {
+        content: note.content,
+        attachedToId: note.attachedToId,
+        attachedToType: note.attachedToType,
+        tags: note.tags || []
+      };
+      
+      await apiService.createNote(noteData);
+      setShowAddNoteModal(false);
+      
+      // Refresh the main content to show the new note
+      if (selectedItem()) {
+        setSelectedItem({ ...selectedItem() });
+      }
+    } catch (error) {
+      console.error("Failed to save note:", error);
+      alert(error.message || "Failed to save note. Please try again.");
+    }
   };
 
   const handleEditNote = (note) => {
@@ -113,9 +152,25 @@ export default function App() {
   };
 
   const handleUpdateNote = async (updatedNote) => {
-    console.log("Updating note:", updatedNote);
-    // Implement update note functionality
-    setShowEditNoteModal(false);
+    try {
+      console.log("Updating note:", updatedNote);
+      
+      const noteData = {
+        content: updatedNote.content,
+        tags: updatedNote.tags || []
+      };
+      
+      await apiService.updateNote(updatedNote.id, noteData);
+      setShowEditNoteModal(false);
+      
+      // Refresh the main content to show the updated note
+      if (selectedItem()) {
+        setSelectedItem({ ...selectedItem() });
+      }
+    } catch (error) {
+      console.error("Failed to update note:", error);
+      alert(error.message || "Failed to update note. Please try again.");
+    }
   };
 
   const handleDeleteNote = (note) => {
@@ -124,15 +179,46 @@ export default function App() {
   };
 
   const handleConfirmDelete = async (item) => {
-    console.log("Deleting:", item);
-    // Implement delete functionality
-    setShowDeleteModal(false);
+    try {
+      console.log("Deleting:", item);
+      
+      if (item.content) {
+        // It's a note
+        await apiService.deleteNote(item.id);
+      } else {
+        // It's a hierarchy node
+        await apiService.deleteHierarchyNode(item.id);
+        setSelectedItem(null); // Clear selection if we deleted the selected item
+      }
+      
+      setShowDeleteModal(false);
+      
+      // Refresh the UI
+      if (selectedItem() && selectedItem().id !== item.id) {
+        setSelectedItem({ ...selectedItem() });
+      }
+    } catch (error) {
+      console.error("Failed to delete item:", error);
+      alert(error.message || "Failed to delete item. Please try again.");
+    }
   };
 
   // Item management handlers
-  const handleEditItem = (item) => {
-    console.log("Editing item:", item);
-    // Implement edit item functionality
+  const handleEditItem = async (item) => {
+    try {
+      const newName = prompt("Enter new name:", item.name);
+      if (newName && newName.trim() && newName.trim() !== item.name) {
+        await apiService.updateHierarchyNode(item.id, { name: newName.trim() });
+        
+        // Refresh the UI
+        if (selectedItem() && selectedItem().id === item.id) {
+          setSelectedItem({ ...item, name: newName.trim() });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to edit item:", error);
+      alert(error.message || "Failed to edit item. Please try again.");
+    }
   };
 
   const handleDeleteItem = (item) => {

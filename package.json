@@ -29,12 +29,15 @@
 	},
 	"dependencies": {
 		"@popperjs/core": "^2.11.8",
+		"bcryptjs": "^3.0.2",
 		"better-sqlite3": "^12.2.0",
 		"body-parser": "^2.2.0",
 		"bootstrap": "^5.3.8",
 		"cors": "^2.8.5",
 		"drizzle-orm": "^0.44.5",
 		"express": "^5.1.0",
-		"solid-js": "^1.9.5"
+		"jsonwebtoken": "^9.0.2",
+		"solid-js": "^1.9.5",
+		"uuid": "^13.0.0"
 	}
 }

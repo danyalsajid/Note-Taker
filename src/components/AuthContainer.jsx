@@ -24,7 +24,7 @@ export default function AuthContainer({ onLogin }) {
             {isLogin() ? (
               <Login onLogin={onLogin} switchToSignup={() => setIsLogin(false)} />
             ) : (
-              <Signup onSignup={() => setIsLogin(true)} switchToLogin={() => setIsLogin(true)} />
+              <Signup onSignup={(user) => user ? onLogin(user) : setIsLogin(true)} switchToLogin={() => setIsLogin(true)} />
             )}
           </div>
         </div>

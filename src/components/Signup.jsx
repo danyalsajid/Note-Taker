@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import apiService from "../services/api";
 
 export default function Signup({ onSignup, switchToLogin }) {
   const [formData, setFormData] = createSignal({
@@ -24,15 +25,28 @@ export default function Signup({ onSignup, switchToLogin }) {
       return;
     }
     
+    if (!data.name || !data.username || !data.email || !data.password || !data.role) {
+      alert("Please fill in all fields!");
+      return;
+    }
+    
     setLoading(true);
     
     try {
-      // Simulate signup API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert("Account created successfully! Please login.");
-      onSignup();
+      const response = await apiService.register({
+        name: data.name,
+        username: data.username,
+        email: data.email,
+        password: data.password,
+        role: data.role
+      });
+      
+      console.log("Registration successful:", response);
+      alert("Account created successfully! You are now logged in.");
+      onSignup(response.user);
     } catch (error) {
       console.error("Signup failed:", error);
+      alert(error.message || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }

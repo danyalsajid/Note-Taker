@@ -9,19 +9,21 @@ export default function AddChildModal({ isOpen, onClose, parentItem, onSave }) {
 
   const getChildType = (parentType) => {
     switch (parentType) {
+      case 'organisation':
       case 'organization': return 'team';
       case 'team': return 'client';
       case 'client': return 'episode';
-      default: return 'item';
+      default: return 'organisation';
     }
   };
 
   const getChildTypeLabel = (parentType) => {
     switch (parentType) {
+      case 'organisation':
       case 'organization': return 'Department/Team';
       case 'team': return 'Patient';
       case 'client': return 'Episode';
-      default: return 'Item';
+      default: return 'Organization';
     }
   };
 

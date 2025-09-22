@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import apiService from "../services/api";
 
 export default function Login({ onLogin, switchToSignup }) {
   const [username, setUsername] = createSignal("");
@@ -17,22 +18,12 @@ export default function Login({ onLogin, switchToSignup }) {
     setLoading(true);
     
     try {
-      // Simulate login API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock user data based on username
-      const userData = {
-        id: 1,
-        name: username() === "admin" ? "Dr. John Smith" : "Dr. Sarah Johnson",
-        role: username() === "admin" ? "Administrator" : "Clinician",
-        email: username() + "@healthcare.com"
-      };
-      
-      console.log("Logging in user:", userData);
-      onLogin(userData);
+      const response = await apiService.login(username().trim(), password().trim());
+      console.log("Login successful:", response);
+      onLogin(response.user);
     } catch (error) {
       console.error("Login failed:", error);
-      alert("Login failed. Please try again.");
+      alert(error.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }

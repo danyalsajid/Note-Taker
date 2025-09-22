@@ -13,8 +13,9 @@ export default function EditNoteModal({ isOpen, onClose, note, onSave }) {
   // Update form when note changes
   createEffect(() => {
     if (note()) {
-      setNoteText(note().text || "");
-      setTags(note().tags ? note().tags.join(', ') : "");
+      setNoteText(note().content || "");
+      const parsedTags = note().tags ? JSON.parse(note().tags) : [];
+      setTags(Array.isArray(parsedTags) ? parsedTags.join(', ') : "");
     }
   });
 
@@ -31,9 +32,8 @@ export default function EditNoteModal({ isOpen, onClose, note, onSave }) {
     try {
       const updatedNote = {
         ...note(),
-        text: noteText().trim(),
-        tags: tags().split(',').map(tag => tag.trim()).filter(tag => tag),
-        updatedAt: new Date().toISOString()
+        content: noteText().trim(),
+        tags: tags().split(',').map(tag => tag.trim()).filter(tag => tag)
       };
 
       await onSave(updatedNote);
@@ -125,7 +125,10 @@ export default function EditNoteModal({ isOpen, onClose, note, onSave }) {
                 <div class="alert alert-secondary">
                   <small>
                     <i class="bi bi-info-circle me-1"></i>
-                    <strong>Created by:</strong> {note().createdBy} on {new Date(note().createdAt).toLocaleString()}
+                    <strong>Created:</strong> {new Date(note().createdAt).toLocaleString()}
+                    {note().updatedAt && note().updatedAt !== note().createdAt && (
+                      <span> • <strong>Updated:</strong> {new Date(note().updatedAt).toLocaleString()}</span>
+                    )}
                   </small>
                 </div>
               </div>

@@ -1,4 +1,5 @@
-import { createSignal, For } from "solid-js";
+import { createSignal, For, onMount, createEffect } from "solid-js";
+import apiService from "../services/api";
 
 export default function Sidebar({ 
   isExpanded, 
@@ -8,85 +9,43 @@ export default function Sidebar({
   onAddChild,
   isMobile 
 }) {
-  // Mock hierarchy data
-  const [hierarchyData] = createSignal([
-    {
-      id: 1,
-      name: "City General Hospital",
-      type: "organization",
-      children: [
-        {
-          id: 2,
-          name: "Cardiology Department",
-          type: "team",
-          children: [
-            {
-              id: 3,
-              name: "John Smith",
-              type: "client",
-              children: [
-                {
-                  id: 4,
-                  name: "Follow-up Consultation",
-                  type: "episode",
-                  date: "2024-01-09",
-                  children: []
-                }
-              ]
-            },
-            {
-              id: 5,
-              name: "Sarah Johnson",
-              type: "client",
-              children: [
-                {
-                  id: 6,
-                  name: "Routine Check-up",
-                  type: "episode",
-                  date: "2024-01-08",
-                  children: []
-                }
-              ]
-            }
-          ]
-        },
-        {
-          id: 7,
-          name: "Emergency Department",
-          type: "team",
-          children: [
-            {
-              id: 8,
-              name: "Michael Brown",
-              type: "client",
-              children: []
-            }
-          ]
-        }
-      ]
-    },
-    {
-      id: 9,
-      name: "Regional Medical Center",
-      type: "organization",
-      children: [
-        {
-          id: 10,
-          name: "Pediatrics",
-          type: "team",
-          children: []
-        }
-      ]
+  // Hierarchy data from API
+  const [hierarchyData, setHierarchyData] = createSignal([]);
+  const [loading, setLoading] = createSignal(false);
+  const [error, setError] = createSignal(null);
+
+  // Load hierarchy data on mount
+  onMount(async () => {
+    await loadHierarchy();
+  });
+
+  const loadHierarchy = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await apiService.getHierarchy();
+      setHierarchyData(data);
+    } catch (err) {
+      console.error('Failed to load hierarchy:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
   const getItemIcon = (type) => {
     switch (type) {
-      case 'organization': return '🏥';
-      case 'team': return '👥';
-      case 'client': return '👤';
-      case 'episode': return '📋';
-      default: return '📄';
+      case 'organisation': 
+      case 'organization': 
+        return <i class="fas fa-hospital text-primary me-2"></i>;
+      case 'team': 
+        return <i class="fas fa-users text-success me-2"></i>;
+      case 'client': 
+        return <i class="fas fa-user text-info me-2"></i>;
+      case 'episode': 
+        return <i class="fas fa-clipboard-list text-warning me-2"></i>;
+      default: 
+        return <i class="fas fa-file text-secondary me-2"></i>;
     }
   };
 
@@ -103,7 +62,7 @@ export default function Sidebar({
           onClick={() => setSelectedItem(item)}
         >
           <div class="d-flex align-items-center">
-            <span class="me-2">{getItemIcon(item.type)}</span>
+            {getItemIcon(item.type)}
             <span class="tree-item-name">{item.name}</span>
             {item.date && <small class="ms-2 opacity-75">({item.date})</small>}
           </div>
@@ -160,9 +119,30 @@ export default function Sidebar({
         </div>
         
         <div class="tree-container">
-          <For each={hierarchyData()}>
-            {(item) => renderTreeItem(item)}
-          </For>
+          {loading() ? (
+            <div class="text-center p-3">
+              <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <div class="mt-2 small text-muted">Loading hierarchy...</div>
+            </div>
+          ) : error() ? (
+            <div class="alert alert-danger m-2">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              {error()}
+              <button 
+                class="btn btn-sm btn-outline-danger mt-2 w-100"
+                onClick={loadHierarchy}
+              >
+                <i class="fas fa-redo me-1"></i>
+                Retry
+              </button>
+            </div>
+          ) : (
+            <For each={hierarchyData()}>
+              {(item) => renderTreeItem(item)}
+            </For>
+          )}
         </div>
       </div>
     </div>

@@ -22,12 +22,10 @@ export default function AddNoteModal({ isOpen, onClose, selectedItem, onSave }) 
 
     try {
       const newNote = {
-        id: Date.now(),
-        text: noteText().trim(),
-        tags: tags().split(',').map(tag => tag.trim()).filter(tag => tag),
-        createdAt: new Date().toISOString(),
-        createdBy: "Current User", // This would come from auth context
-        itemId: selectedItem().id
+        content: noteText().trim(),
+        attachedToId: selectedItem().id,
+        attachedToType: selectedItem().type,
+        tags: tags().split(',').map(tag => tag.trim()).filter(tag => tag)
       };
 
       await onSave(newNote);

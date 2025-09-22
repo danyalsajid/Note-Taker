@@ -1,4 +1,5 @@
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, For, Show, createEffect } from "solid-js";
+import apiService from "../services/api";
 
 export default function MainContent({ 
   selectedItem, 
@@ -9,23 +10,35 @@ export default function MainContent({
   onDeleteItem,
   onAISummary 
 }) {
-  // Mock notes data for selected item
-  const [notes] = createSignal([
-    {
-      id: 1,
-      text: "Prescribed Lisinopril 10mg daily for hypertension. Patient advised to monitor blood pressure at home.",
-      tags: ["Medication", "Follow-up"],
-      createdAt: "2024-01-09T08:30:00Z",
-      createdBy: "Dr. Smith"
-    },
-    {
-      id: 2,
-      text: "Patient reports feeling better since last visit. Blood pressure readings have improved.",
-      tags: ["Assessment", "Progress"],
-      createdAt: "2024-01-09T08:35:00Z",
-      createdBy: "Dr. Smith"
+  // Notes data from API
+  const [notes, setNotes] = createSignal([]);
+  const [loading, setLoading] = createSignal(false);
+  const [error, setError] = createSignal(null);
+
+  // Load notes when selected item changes
+  createEffect(async () => {
+    const item = selectedItem();
+    if (item?.id) {
+      await loadNotes(item.id);
+    } else {
+      setNotes([]);
     }
-  ]);
+  });
+
+  const loadNotes = async (nodeId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await apiService.getNotes(nodeId);
+      setNotes(data);
+    } catch (err) {
+      console.error('Failed to load notes:', err);
+      setError(err.message);
+      setNotes([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -39,6 +52,7 @@ export default function MainContent({
 
   const getItemTypeLabel = (type) => {
     switch (type) {
+      case 'organisation':
       case 'organization': return 'Organization';
       case 'team': return 'Department/Team';
       case 'client': return 'Patient';
@@ -157,67 +171,88 @@ export default function MainContent({
               </div>
             </div>
 
-            <Show
-              when={notes().length > 0}
-              fallback={
-                <div class="text-center py-5">
-                  <i class="bi bi-journal-x display-4 text-muted mb-3"></i>
-                  <p class="text-muted">No notes available for this item.</p>
-                  <button
-                    class="btn btn-primary"
-                    onClick={() => onAddNote(selectedItem())}
-                  >
-                    <i class="bi bi-plus me-1"></i>
-                    Add First Note
-                  </button>
+            {loading() ? (
+              <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading notes...</span>
                 </div>
-              }
-            >
-              <div class="notes-list">
-                <For each={notes()}>
-                  {(note) => (
-                    <div class="card mb-3">
-                      <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                          <div class="note-meta">
-                            <small class="text-muted">
-                              <i class="bi bi-person me-1"></i>
-                              {note.createdBy} • {formatDate(note.createdAt)}
-                            </small>
+                <div class="mt-2 text-muted">Loading notes...</div>
+              </div>
+            ) : error() ? (
+              <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                {error()}
+                <button 
+                  class="btn btn-sm btn-outline-danger mt-2 w-100"
+                  onClick={() => loadNotes(selectedItem().id)}
+                >
+                  <i class="fas fa-redo me-1"></i>
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <Show
+                when={notes().length > 0}
+                fallback={
+                  <div class="text-center py-5">
+                    <i class="bi bi-journal-x display-4 text-muted mb-3"></i>
+                    <p class="text-muted">No notes available for this item.</p>
+                    <button
+                      class="btn btn-primary"
+                      onClick={() => onAddNote(selectedItem())}
+                    >
+                      <i class="bi bi-plus me-1"></i>
+                      Add First Note
+                    </button>
+                  </div>
+                }
+              >
+                <div class="notes-list">
+                  <For each={notes()}>
+                    {(note) => (
+                      <div class="card mb-3">
+                        <div class="card-body">
+                          <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="note-meta">
+                              <small class="text-muted">
+                                <i class="bi bi-person me-1"></i>
+                                {formatDate(note.createdAt)}
+                              </small>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                              <button
+                                class="btn btn-outline-secondary"
+                                onClick={() => onEditNote(note)}
+                                title="Edit Note"
+                              >
+                                <i class="bi bi-pencil"></i>
+                              </button>
+                              <button
+                                class="btn btn-outline-danger"
+                                onClick={() => onDeleteNote(note)}
+                                title="Delete Note"
+                              >
+                                <i class="bi bi-trash"></i>
+                              </button>
+                            </div>
                           </div>
-                          <div class="btn-group btn-group-sm">
-                            <button
-                              class="btn btn-outline-secondary"
-                              onClick={() => onEditNote(note)}
-                              title="Edit Note"
-                            >
-                              <i class="bi bi-pencil"></i>
-                            </button>
-                            <button
-                              class="btn btn-outline-danger"
-                              onClick={() => onDeleteNote(note)}
-                              title="Delete Note"
-                            >
-                              <i class="bi bi-trash"></i>
-                            </button>
+                          
+                          <p class="note-text mb-2">{note.content}</p>
+                          
+                          <div class="note-tags">
+                            <For each={note.tags ? JSON.parse(note.tags) : []}>
+                              {(tag) => (
+                                <span class="badge bg-secondary me-1">{tag}</span>
+                              )}
+                            </For>
                           </div>
-                        </div>
-                        
-                        <p class="note-text mb-2">{note.text}</p>
-                        
-                        <div class="note-tags">
-                          <For each={note.tags}>
-                            {(tag) => (
-                              <span class="badge bg-secondary me-1">{tag}</span>
-                            )}
-                          </For>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </For>
-              </div>
-            </Show>
+                    )}
+                  </For>
+                </div>
+              </Show>
+            )}
           </div>
         </div>
       </Show>
