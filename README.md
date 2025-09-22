@@ -1,99 +1,126 @@
-# Note Taker App
+# Healthcare Note Taker
 
-A full-stack note-taking application built with SolidJS frontend and Express.js backend.
+Note-taking web app for healthcare organisations with a flexible hierarchy (e.g., Organisation → Team → Client → Episode → Note)
+For the frontend I am using solidjs with vite and bootstrap for styling.
+For the backend I am using nodejs with express and sqlite with drizzle ORM.
 
-## Features
+## Key Features
+- User authentication (admin/clinician)
+- Role-based access control
+- Hierarchical data management
+- Note-taking with tags and search
+- Real-time updates
+- Responsive design
+- Typed notes with tags.
+- Tags to attach in a note.
+- Filter based on tags
+- Search notes.
+- AI assisted summari of notes.
+- Simple roles/permision (admin/clinician)
 
+## Technical features:
+- Basic auth with JWT authentication
+- Hierarchical data management with sqlite and drizzle ORM with closure table
+- Responsive design with bootstrap
+- AI integration with Anthropic Claude
+
+### Authentication & Security
+- JWT-based authentication with bcrypt password hashing
+- Role-based access control (user/admin)
+- Secure session management
+- Protected API endpoints
+
+### Hierarchical Data Management
+- **Organizations**: Top-level 
+- **Teams**: Child of organizations
+- **Clients**: Child of teams
+- **Episodes**: Child of clients
+- **Notes**: Child of any level of the hierarchy
+
+### Note Management
 - Create, read, update, and delete notes
-- SQLite database with Drizzle ORM
-- Modern SolidJS frontend with Bootstrap styling
-- RESTful API backend
+- Attach notes to any level of the hierarchy
+- Custom tagging for notes.
+
+
+### Search & Discovery
+- Search across all notes
+- Tag based filtering
+- Hierarchical Tree in the sidebar for navigation
+
+### AI Integration
+- AI-assisted note summarization
+- Anthropic Claude integration
 
 ## Tech Stack
 
-- **Frontend**: SolidJS, Vite, Bootstrap, TypeScript
-- **Backend**: Express.js, Node.js
-- **Database**: SQLite with Drizzle ORM
-- **Deployment**: Railway
+### Frontend
+- SolidJS 
+- Bootstrap
 
-## Local Development
-
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-2. Run both frontend and backend:
-   ```bash
-   npm run dev:all
-   ```
-
-3. Or run them separately:
-   ```bash
-   # Frontend (port 3000)
-   npm run dev
-
-   # Backend (port 3001)
-   npm run dev:server
-   ```
-
-## Deployment to Railway
-
-### Prerequisites
-- [Railway CLI](https://docs.railway.app/develop/cli) installed
-- Railway account
-
-### Deploy Steps
-
-1. **Login to Railway:**
-   ```bash
-   railway login
-   ```
-
-2. **Initialize Railway project:**
-   ```bash
-   railway init
-   ```
-
-3. **Deploy:**
-   ```bash
-   railway up
-   ```
-
-### Alternative: Deploy via GitHub
-
-1. Push your code to GitHub
-2. Connect your GitHub repository to Railway
-3. Railway will automatically detect the configuration and deploy
-
-### Configuration Files
-
-- `railway.toml` - Railway-specific configuration
-
-### Environment Variables
-
-The app uses the following environment variables:
-- `PORT` - Server port (automatically set by Railway)
-- `NODE_ENV` - Set to "production" for deployment
+### Backend
+- Express.js 
+- JWT 
+- bcryptjs 
 
 ### Database
+- SQLite 
+- Drizzle ORM 
 
-The SQLite database file (`db.sqlite`) is included in the repository for simplicity. In production, you might want to use Railway's PostgreSQL add-on for better persistence and scalability.
+
+### Installation
+   ```bash
+   npm install
+
+   # Run both frontend and backend concurrently
+   npm run dev:all
+   
+   # run separately:
+   npm run dev        # Frontend (port 3000)
+   npm run dev:server # Backend (port 3001)
+   npm run build        # Build for production
+   ```
 
 ## API Endpoints
 
-- `GET /api/notes` - Get all notes
-- `POST /api/notes` - Create a new note
-- `PUT /api/notes/:id` - Update a note
-- `DELETE /api/notes/:id` - Delete a note
+### Authentication
+- `POST /api/auth/login` - User login
+- `POST /api/auth/signup` - User registration
+- `POST /api/auth/logout` - User logout
+- `GET /api/auth/me` - Get current user info
 
-## Project Structure
+### Hierarchy Management
+- `GET /api/data` - Get complete hierarchy tree
+- `GET /api/:type` - Get items by type (organizations, teams, clients, episodes)
+- `GET /api/:type/:id` - Get specific item by ID
+- `POST /api/:type` - Create new hierarchy item
+- `PUT /api/:type/:id` - Update hierarchy item
+- `DELETE /api/:type/:id` - Delete hierarchy item (cascading)
 
-```
-├── src/                 # Frontend SolidJS code
-├── server/             # Backend Express.js code
-│   ├── db/            # Database configuration
-│   └── index.js       # Main server file
-├── dist/              # Built frontend (generated)
-├── package.json       # Dependencies and scripts
-├── vite.config.js     # Vite configuration```
+### Notes Management
+- `GET /api/notes/:attachedToType/:attachedToId` - Get notes for specific item
+- `POST /api/notes` - Create new note
+- `PUT /api/notes/:id` - Update note
+- `DELETE /api/notes/:id` - Delete note
+
+### Health check
+- `GET /api/health` - Health check endpoint
+
+## Database Schema
+
+### Users
+- User authentication and profile information
+- Role-based access control
+
+### Hierarchy Nodes
+- Organizations, teams, clients, and episodes
+- Hierarchical relationships via closure table
+
+### Notes
+- Rich text content with tagging
+- Attached to any hierarchy level
+- Timestamped creation and updates
+
+### Hierarchy Closure
+- Efficient tree traversal and relationship management
+- Supports complex hierarchical queries

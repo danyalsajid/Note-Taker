@@ -12,7 +12,6 @@ dist/
 build/
 
 # files
-DEPLOY.md
 README.md
 
 # Database
