@@ -9,7 +9,10 @@ import { fileURLToPath } from 'url';
 import { db } from './db/connection.js';
 import { notes } from './db/schema.js';
 import { initializeDatabase } from './db/database.js';
-import { hierarchyNodes } from './db/schema.js';
+import {
+	getChildren,
+	getNodesByType,
+} from './db/hierarchy-utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,17 +26,63 @@ await initializeDatabase();
 app.use(cors());
 app.use(bodyParser.json());
 
+// Helper function to build hierarchical data
+async function buildHierarchicalData() {
+	const organisations = await getNodesByType('organisation');
+	const result = {
+		organisations: [],
+		teams: [],
+		clients: [],
+		episodes: [],
+		notes: []
+	};
+
+	// Get all nodes
+	for (const org of organisations) {
+		result.organisations.push(org);
+
+		const teams = await getChildren(org.id);
+		for (const team of teams) {
+			result.teams.push({ ...team, parentId: org.id });
+
+			const clients = await getChildren(team.id);
+			for (const client of clients) {
+				result.clients.push({ ...client, parentId: team.id });
+
+				const episodes = await getChildren(client.id);
+				for (const episode of episodes) {
+					result.episodes.push({ ...episode, parentId: client.id });
+				}
+			}
+		}
+	}
+
+	// Get all notes
+	const allNotes = await db.select().from(notes);
+	result.notes = allNotes.map(note => ({
+		id: note.id,
+		content: note.content,
+		attachedToId: note.attachedToId,
+		attachedToType: note.attachedToType,
+		tags: note.tags ? JSON.parse(note.tags) : [],
+		createdAt: note.createdAt,
+		updatedAt: note.updatedAt
+	}));
+
+	return result;
+}
+
 ///////////////////////////////////
 // CRUD routes
 
 // Get all data
 app.get('/api/data', async (req, res) => {
 	try {
-		const organizations = await db.select().from(hierarchyNodes).where(eq(hierarchyNodes.type, 'organisation'));
-		res.json(organizations);
+		const data = await buildHierarchicalData();
+		res.json(data);
 	} catch (error) {
-		console.error('Error fetching organizations:', error);
-		res.status(500).json({ error: 'Failed to fetch organizations' });
+		console.error('Get data error:', error);
+		res.status(500).json({ error: 'Failed to fetch data' });
 	}
 });
 
