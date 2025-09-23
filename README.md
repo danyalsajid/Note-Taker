@@ -4,26 +4,42 @@ Note-taking web app for healthcare organisations with a flexible hierarchy (e.g.
 For the frontend I am using solidjs with vite and bootstrap for styling.
 For the backend I am using nodejs with express and sqlite with drizzle ORM.
 
-## Key Features
+## Core Flow
+- User lands on the signIn page. Where he/she can login/signUp. (Demo creds are shown for quick login)
+- After authentication, you can see the home page. 
+- The Side bar contains the selectable hierarchy of the organization. Which can be extended by adding a child to it.
+- After selecting a hierarchy, all the attached notes will be shown on the right side.
+- You can Add, Delete or update notes at any level of hierarchy.
+- You can attach a file to the hierarchy along with custom tags.
+- AI summarize button will give you the short summary of all the notes in the selected hierarchy.
+- On the header Navigate through all the notes through breadcrumbs.
+   Search note through search bar
+   Filter notes based on tags filter
+
+## Key Features (with assumptions mentioned)
 - User authentication (admin/clinician)
+   - (Assumption) Admin can signUp only with a special passcode he will receive in their email after some validations. For now use 000000 as the passcode for the signUp
 - Role-based access control
+   - (Assumption) Only Admin can create organization. Ideally he is supposed to give access for the customizability to other users. But for the scope of this task, he can only add the organization.
 - Hierarchical data management
-- Note-taking with tags and search
 - Real-time updates
 - Responsive design
 - Typed notes with tags.
+- File attachment in the notes
 - Tags to attach in a note.
 - Filter based on tags
 - Search notes.
-- AI assisted summari of notes.
-- Simple roles/permision (admin/clinician)
+- AI assisted summary of notes.
+   - (Assumption) AI is configured with limited tokens. More AI features can be added like AI suggestions.
 - Offline notes capture
+   - (Assumption) Ideally service workers with application cache should be implemented. But for the scope of this task, I used the browser's local storage for offline capture.
+
 
 ## Technical features:
 - Basic auth with JWT authentication
 - Hierarchical data management with sqlite and drizzle ORM with closure table
 - Responsive design with bootstrap
-- AI integration with Anthropic Claude
+- AI integration with Google Gemini
 - Offline notes capture through browser local storage
 
 ### Authentication & Security
