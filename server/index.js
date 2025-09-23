@@ -8,7 +8,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 import fs from 'fs';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 
 // Database 
@@ -24,10 +28,9 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'healthcare-notes-secret-key-2024';
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY
-});
+// Initialize Google Generative AI client
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 
 // Initialize database
@@ -893,6 +896,64 @@ if (process.env.NODE_ENV === 'production') {
 
 ////////////
 // CRUD Operations END
+////////////
+
+////////////
+// AI Operations Start
+////////////
+
+// AI Summary endpoint
+app.post('/api/ai/summarize', requireAuth, async (req, res) => {
+  console.log('Google API key configured:', !!process.env.GOOGLE_API_KEY)
+
+  try {
+    const { notes } = req.body;
+    
+    if (!notes || !Array.isArray(notes) || notes.length === 0) {
+      return res.status(400).json({ error: 'Notes array is required and must not be empty' });
+    }
+    
+    // Check if Google API key is configured
+    if (!process.env.GOOGLE_API_KEY) {
+      console.log('Google API key not configured');
+      return res.status(500).json({ 
+        error: 'AI service not configured. Please contact your administrator.' 
+      }); 
+    }
+    
+    // Prepare notes content
+    const notesContent = notes.map((note, index) => {
+      const createdDate = new Date(note.createdAt).toLocaleDateString();
+      const updatedDate = note.updatedAt ? new Date(note.updatedAt).toLocaleDateString() : createdDate;
+      
+      return `Note ${index + 1} (Created: ${createdDate}${updatedDate !== createdDate ? `, Updated: ${updatedDate}` : ''}):\n${note.content}`;
+    }).join('\n\n---\n\n');
+    
+    // Create the AI prompt
+    const prompt = `Please analyze the following healthcare notes and provide a short summary. ${notesContent}`;
+
+    // Call Google Gemini API
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const summary = response.text();
+    
+    res.json({ 
+      summary,
+      notesCount: notes.length,
+      generatedAt: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('AI Summary error:', error);
+    
+    res.status(500).json({ 
+      error: 'Failed to generate AI summary. Please try again later.' 
+    });
+  }
+});
+
+////////////
+// AI Operations End
 ////////////
 
 
