@@ -11,7 +11,9 @@
 		"serve": "vite preview",
 		"start": "node server/index.js",
 		"railway:build": "npm install && npm run build",
-		"railway:start": "npm run start"
+		"railway:start": "npm run start",
+		"lint": "eslint . --ext .js,.mjs,.cjs",
+		"lint:fix": "eslint . --ext .js,.mjs,.cjs --fix"
 	},
 	"license": "MIT",
 	"engines": {
@@ -21,6 +23,9 @@
 	"devDependencies": {
 		"@types/bootstrap": "^5.2.10",
 		"concurrently": "^9.2.1",
+		"eslint": "^9.36.0",
+		"eslint-plugin-solid": "^0.14.5",
+		"globals": "^16.4.0",
 		"nodemon": "^3.1.10",
 		"sass": "^1.81.0",
 		"typescript": "^5.7.2",

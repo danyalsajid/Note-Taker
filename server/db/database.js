@@ -1,13 +1,13 @@
-import { db, sqlite } from './connection.js';
-import { notes, users, hierarchyNodes, hierarchyClosure, attachments } from './schema.js';
-import { seedDatabase } from './seed.js';
+import { db, sqlite } from "./connection.js";
+import { notes, users, hierarchyNodes, hierarchyClosure, attachments } from "./schema.js";
+import { seedDatabase } from "./seed.js";
 
 // Initialize database function
 export const initializeDatabase = async () => {  
-  try {
-    console.log('Creating tables from schema');
+	try {
+		console.log("Creating tables from schema");
     
-    sqlite.exec(`
+		sqlite.exec(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         username TEXT NOT NULL UNIQUE,
@@ -19,7 +19,7 @@ export const initializeDatabase = async () => {
       )
     `);
 
-    sqlite.exec(`
+		sqlite.exec(`
       CREATE TABLE IF NOT EXISTS hierarchy_nodes (
         id TEXT PRIMARY KEY,
         type TEXT NOT NULL,
@@ -29,7 +29,7 @@ export const initializeDatabase = async () => {
       )
     `);
 
-    sqlite.exec(`
+		sqlite.exec(`
       CREATE TABLE IF NOT EXISTS notes (
         id TEXT PRIMARY KEY,
         content TEXT NOT NULL,
@@ -42,7 +42,7 @@ export const initializeDatabase = async () => {
       )
     `);
 
-    sqlite.exec(`
+		sqlite.exec(`
       CREATE TABLE IF NOT EXISTS hierarchy_closure (
         ancestor TEXT NOT NULL,
         descendant TEXT NOT NULL,
@@ -53,7 +53,7 @@ export const initializeDatabase = async () => {
       )
     `);
 
-    sqlite.exec(`
+		sqlite.exec(`
       CREATE TABLE IF NOT EXISTS attachments (
         id TEXT PRIMARY KEY,
         note_id TEXT NOT NULL,
@@ -67,14 +67,14 @@ export const initializeDatabase = async () => {
       )
     `);
 
-    console.log('Tables created successfully!');
+		console.log("Tables created successfully!");
     
-    await seedDatabase(db);
-    console.log('Database initialization completed.');
-  } catch (error) {
-    console.error('Database initialization failed:', error);
-    process.exit(1);
-  }
+		await seedDatabase(db);
+		console.log("Database initialization completed.");
+	} catch (error) {
+		console.error("Database initialization failed:", error);
+		process.exit(1);
+	}
 };
 
 // Export schema for use in other files

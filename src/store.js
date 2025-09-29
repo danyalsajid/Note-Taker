@@ -1,18 +1,18 @@
-import { createSignal, createMemo } from 'solid-js';
-import { authApiCall } from './auth';
+import { createSignal, createMemo } from "solid-js";
+import { authApiCall } from "./auth";
 
 // API base URL - Dynamic based on current host and protocol
 const getApiBase = () => {
-  const protocol = window.location.protocol;
-  const hostname = window.location.hostname;
+	const protocol = window.location.protocol;
+	const hostname = window.location.hostname;
   
-  // If deployed 
-  if (hostname.includes('.railway.app')) {
-    return `${protocol}//${hostname}/api`;
-  }
+	// If deployed 
+	if (hostname.includes(".railway.app")) {
+		return `${protocol}//${hostname}/api`;
+	}
   
-  // For local network
-  return `${protocol}//${hostname}:3001/api`;
+	// For local network
+	return `${protocol}//${hostname}:3001/api`;
 };
 const API_BASE = getApiBase();
 
@@ -39,11 +39,11 @@ const API_BASE = getApiBase();
 
 // Global state
 const [data, setData] = createSignal({
-  organisations: [],
-  teams: [],
-  clients: [],
-  episodes: [],
-  notes: []
+	organisations: [],
+	teams: [],
+	clients: [],
+	episodes: [],
+	notes: []
 });
 const [selectedItem, setSelectedItem] = createSignal(null);
 const [selectedType, setSelectedType] = createSignal(null);
@@ -51,7 +51,7 @@ const [loading, setLoading] = createSignal(false);
 const [error, setError] = createSignal(null);
 
 // Search state
-const [searchQuery, setSearchQuery] = createSignal('');
+const [searchQuery, setSearchQuery] = createSignal("");
 const [searchResults, setSearchResults] = createSignal([]);
 const [isSearching, setIsSearching] = createSignal(false);
 
@@ -64,324 +64,324 @@ const [offlineNotes, setOfflineNotes] = createSignal([]);
 const [isOnline, setIsOnline] = createSignal(navigator.onLine);
 
 // Offline storage utilities
-const OFFLINE_NOTES_KEY = 'note-taker-offline-notes';
+const OFFLINE_NOTES_KEY = "note-taker-offline-notes";
 
 const saveOfflineNotes = (notes) => {
-  try {
-    localStorage.setItem(OFFLINE_NOTES_KEY, JSON.stringify(notes));
-  } catch (err) {
-    console.error('Failed to save offline notes:', err);
-  }
+	try {
+		localStorage.setItem(OFFLINE_NOTES_KEY, JSON.stringify(notes));
+	} catch (err) {
+		console.error("Failed to save offline notes:", err);
+	}
 };
 
 const loadOfflineNotes = () => {
-  try {
-    const stored = localStorage.getItem(OFFLINE_NOTES_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch (err) {
-    console.error('Failed to load offline notes:', err);
-    return [];
-  }
+	try {
+		const stored = localStorage.getItem(OFFLINE_NOTES_KEY);
+		return stored ? JSON.parse(stored) : [];
+	} catch (err) {
+		console.error("Failed to load offline notes:", err);
+		return [];
+	}
 };
 
 const clearOfflineNotes = () => {
-  try {
-    localStorage.removeItem(OFFLINE_NOTES_KEY);
-    setOfflineNotes([]);
-  } catch (err) {
-    console.error('Failed to clear offline notes:', err);
-  }
+	try {
+		localStorage.removeItem(OFFLINE_NOTES_KEY);
+		setOfflineNotes([]);
+	} catch (err) {
+		console.error("Failed to clear offline notes:", err);
+	}
 };
 
 // API helper functions, uses authenticated API calls
 const apiCall = async (endpoint, options = {}) => {
-  try {
-    setError(null);
-    return await authApiCall(endpoint, options);
-  } catch (err) {
-    setError(err.message);
-    throw err;
-  }
+	try {
+		setError(null);
+		return await authApiCall(endpoint, options);
+	} catch (err) {
+		setError(err.message);
+		throw err;
+	}
 };
 
 // Network status monitoring
-window.addEventListener('online', () => {
-  setIsOnline(true);
-  syncOfflineNotes();
+window.addEventListener("online", () => {
+	setIsOnline(true);
+	syncOfflineNotes();
 });
 
-window.addEventListener('offline', () => {
-  setIsOnline(false);
+window.addEventListener("offline", () => {
+	setIsOnline(false);
 });
 
 // Load initial data from API
 const loadData = async () => {
-  try {
-    setLoading(true);
-    const apiData = await apiCall('/data');
-    setData(apiData);
-    // Update available tags after loading data
-    updateAvailableTags();
-    // Load offline notes
-    const offline = loadOfflineNotes();
-    setOfflineNotes(offline);
-  } catch (err) {
-    console.error('Failed to load data:', err);
-    // Don't set error for authentication issues
-    if (!err.message.includes('Not authenticated') && !err.message.includes('Authentication required')) {
-      setError(err.message);
-    }
-    // Fallback to empty data structure
-    setData({
-      organisations: [],
-      teams: [],
-      clients: [],
-      episodes: [],
-      notes: []
-    });
-    // Still load offline notes even if API fails
-    const offline = loadOfflineNotes();
-    setOfflineNotes(offline);
-  } finally {
-    setLoading(false);
-  }
+	try {
+		setLoading(true);
+		const apiData = await apiCall("/data");
+		setData(apiData);
+		// Update available tags after loading data
+		updateAvailableTags();
+		// Load offline notes
+		const offline = loadOfflineNotes();
+		setOfflineNotes(offline);
+	} catch (err) {
+		console.error("Failed to load data:", err);
+		// Don't set error for authentication issues
+		if (!err.message.includes("Not authenticated") && !err.message.includes("Authentication required")) {
+			setError(err.message);
+		}
+		// Fallback to empty data structure
+		setData({
+			organisations: [],
+			teams: [],
+			clients: [],
+			episodes: [],
+			notes: []
+		});
+		// Still load offline notes even if API fails
+		const offline = loadOfflineNotes();
+		setOfflineNotes(offline);
+	} finally {
+		setLoading(false);
+	}
 };
 
 // Data will be loaded when user is authenticated
 
 // Helper functions
-export const getItemsByType = (type) => data()[type + 's'] || [];
+export const getItemsByType = (type) => data()[type + "s"] || [];
 
 export const getItemById = (id, type) => {
-  const items = getItemsByType(type);
-  return items.find(item => item.id === id);
+	const items = getItemsByType(type);
+	return items.find(item => item.id === id);
 };
 
 export const getChildItems = (parentId, childType) => {
-  const items = getItemsByType(childType);
-  return items.filter(item => item.parentId === parentId);
+	const items = getItemsByType(childType);
+	return items.filter(item => item.parentId === parentId);
 };
 
 export const getNotesForItem = (itemId, itemType) => {
-  // Get online notes
-  let notes = data().notes.filter(note => 
-    note.attachedToId === itemId && note.attachedToType === itemType
-  );
+	// Get online notes
+	let notes = data().notes.filter(note => 
+		note.attachedToId === itemId && note.attachedToType === itemType
+	);
   
-  // Add offline notes for this item
-  const offline = offlineNotes().filter(note => 
-    note.attachedToId === itemId && note.attachedToType === itemType
-  );
-  notes = [...notes, ...offline];
+	// Add offline notes for this item
+	const offline = offlineNotes().filter(note => 
+		note.attachedToId === itemId && note.attachedToType === itemType
+	);
+	notes = [...notes, ...offline];
   
-  // Apply tag filter if any tags are selected
-  const tags = selectedTags();
-  if (tags.length > 0) {
-    notes = notes.filter(note => {
-      const noteTags = note.tags || [];
-      return tags.some(tag => noteTags.includes(tag));
-    });
-  }
+	// Apply tag filter if any tags are selected
+	const tags = selectedTags();
+	if (tags.length > 0) {
+		notes = notes.filter(note => {
+			const noteTags = note.tags || [];
+			return tags.some(tag => noteTags.includes(tag));
+		});
+	}
   
-  return notes;
+	return notes;
 };
 
 // Search functionality
 export const searchAllNotes = (query) => {
-  if (!query || query.trim() === '') {
-    setSearchResults([]);
-    setSearchQuery('');
-    return [];
-  }
+	if (!query || query.trim() === "") {
+		setSearchResults([]);
+		setSearchQuery("");
+		return [];
+	}
 
-  const normalizedQuery = query.toLowerCase().trim();
-  setSearchQuery(query);
-  setIsSearching(true);
+	const normalizedQuery = query.toLowerCase().trim();
+	setSearchQuery(query);
+	setIsSearching(true);
 
-  try {
-    // Search both online and offline notes
-    const allNotes = [...data().notes, ...offlineNotes()];
-    const matchingNotes = allNotes.filter(note => 
-      note.content.toLowerCase().includes(normalizedQuery)
-    );
+	try {
+		// Search both online and offline notes
+		const allNotes = [...data().notes, ...offlineNotes()];
+		const matchingNotes = allNotes.filter(note => 
+			note.content.toLowerCase().includes(normalizedQuery)
+		);
 
-    // Enhance results with hierarchy information
-    const enhancedResults = matchingNotes.map(note => {
-      const attachedItem = getItemById(note.attachedToId, note.attachedToType);
-      const breadcrumb = getBreadcrumb(note.attachedToId, note.attachedToType);
+		// Enhance results with hierarchy information
+		const enhancedResults = matchingNotes.map(note => {
+			const attachedItem = getItemById(note.attachedToId, note.attachedToType);
+			const breadcrumb = getBreadcrumb(note.attachedToId, note.attachedToType);
       
-      return {
-        ...note,
-        attachedItem,
-        breadcrumb,
-        hierarchy: breadcrumb.map(b => b.name).join(' > '),
-        isOffline: note.isOffline || false
-      };
-    });
+			return {
+				...note,
+				attachedItem,
+				breadcrumb,
+				hierarchy: breadcrumb.map(b => b.name).join(" > "),
+				isOffline: note.isOffline || false
+			};
+		});
 
-    setSearchResults(enhancedResults);
-    return enhancedResults;
-  } catch (err) {
-    console.error('Search error:', err);
-    setSearchResults([]);
-    return [];
-  } finally {
-    setIsSearching(false);
-  }
+		setSearchResults(enhancedResults);
+		return enhancedResults;
+	} catch (err) {
+		console.error("Search error:", err);
+		setSearchResults([]);
+		return [];
+	} finally {
+		setIsSearching(false);
+	}
 };
 
 export const clearSearch = () => {
-  setSearchQuery('');
-  setSearchResults([]);
-  setIsSearching(false);
+	setSearchQuery("");
+	setSearchResults([]);
+	setIsSearching(false);
 };
 
 // Tag filtering functions
 export const updateAvailableTags = () => {
-  // Include both online and offline notes for tag extraction
-  const allNotes = [...data().notes, ...offlineNotes()];
-  const tagSet = new Set();
+	// Include both online and offline notes for tag extraction
+	const allNotes = [...data().notes, ...offlineNotes()];
+	const tagSet = new Set();
   
-  allNotes.forEach(note => {
-    if (note.tags && Array.isArray(note.tags)) {
-      note.tags.forEach(tag => tagSet.add(tag));
-    }
-  });
+	allNotes.forEach(note => {
+		if (note.tags && Array.isArray(note.tags)) {
+			note.tags.forEach(tag => tagSet.add(tag));
+		}
+	});
   
-  setAvailableTags(Array.from(tagSet).sort());
+	setAvailableTags(Array.from(tagSet).sort());
 };
 
 export const toggleTagFilter = (tag) => {
-  const currentTags = selectedTags();
-  if (currentTags.includes(tag)) {
-    setSelectedTags(currentTags.filter(t => t !== tag));
-  } else {
-    setSelectedTags([...currentTags, tag]);
-  }
+	const currentTags = selectedTags();
+	if (currentTags.includes(tag)) {
+		setSelectedTags(currentTags.filter(t => t !== tag));
+	} else {
+		setSelectedTags([...currentTags, tag]);
+	}
 };
 
 export const clearTagFilters = () => {
-  setSelectedTags([]);
+	setSelectedTags([]);
 };
 
 export const getAllNotesWithTags = () => {
-  // Include both online and offline notes
-  let notes = [...data().notes, ...offlineNotes()];
+	// Include both online and offline notes
+	let notes = [...data().notes, ...offlineNotes()];
   
-  // Apply tag filter if any tags are selected
-  const tags = selectedTags();
-  if (tags.length > 0) {
-    notes = notes.filter(note => {
-      const noteTags = note.tags || [];
-      return tags.some(tag => noteTags.includes(tag));
-    });
-  }
+	// Apply tag filter if any tags are selected
+	const tags = selectedTags();
+	if (tags.length > 0) {
+		notes = notes.filter(note => {
+			const noteTags = note.tags || [];
+			return tags.some(tag => noteTags.includes(tag));
+		});
+	}
   
-  return notes;
+	return notes;
 };
 
 export const selectSearchResult = (note) => {
-  // Navigate to the item that contains this note
-  const item = getItemById(note.attachedToId, note.attachedToType);
-  if (item) {
-    setSelectedItem(item);
-    setSelectedType(note.attachedToType);
-    clearSearch();
-  }
+	// Navigate to the item that contains this note
+	const item = getItemById(note.attachedToId, note.attachedToType);
+	if (item) {
+		setSelectedItem(item);
+		setSelectedType(note.attachedToType);
+		clearSearch();
+	}
 };
 
 // AI Summary
 export const generateAISummary = async (notes) => {
-  if (!notes || notes.length === 0) {
-    throw new Error('No notes provided for summarization');
-  }
+	if (!notes || notes.length === 0) {
+		throw new Error("No notes provided for summarization");
+	}
 
-  try {
-    // notes data for AI analysis
-    const notesData = notes.map(note => ({
-      content: note.content,
-      createdAt: note.createdAt,
-      updatedAt: note.updatedAt
-    }));
+	try {
+		// notes data for AI analysis
+		const notesData = notes.map(note => ({
+			content: note.content,
+			createdAt: note.createdAt,
+			updatedAt: note.updatedAt
+		}));
 
-    // Call the AI summary API endpoint
-    const response = await apiCall('/ai/summarize', {
-      method: 'POST',
-      body: JSON.stringify({ notes: notesData })
-    });
+		// Call the AI summary API endpoint
+		const response = await apiCall("/ai/summarize", {
+			method: "POST",
+			body: JSON.stringify({ notes: notesData })
+		});
 
-    return response.summary;
-  } catch (err) {
-    console.error('AI Summary API error:', err);
-  }
+		return response.summary;
+	} catch (err) {
+		console.error("AI Summary API error:", err);
+	}
 };
 
 export const getBreadcrumb = (itemId, itemType) => {
-  const breadcrumb = [];
-  let currentId = itemId;
-  let currentType = itemType;
+	const breadcrumb = [];
+	let currentId = itemId;
+	let currentType = itemType;
   
-  while (currentId) {
-    const item = getItemById(currentId, currentType);
-    if (!item) break;
+	while (currentId) {
+		const item = getItemById(currentId, currentType);
+		if (!item) break;
     
-    breadcrumb.unshift({ id: currentId, type: currentType, name: item.name });
+		breadcrumb.unshift({ id: currentId, type: currentType, name: item.name });
     
-    // Move to parent
-    currentId = item.parentId;
-    switch (currentType) {
-      case 'episode': currentType = 'client'; break;
-      case 'client': currentType = 'team'; break;
-      case 'team': currentType = 'organisation'; break;
-      default: currentId = null;
-    }
-  }
+		// Move to parent
+		currentId = item.parentId;
+		switch (currentType) {
+			case "episode": currentType = "client"; break;
+			case "client": currentType = "team"; break;
+			case "team": currentType = "organisation"; break;
+			default: currentId = null;
+		}
+	}
   
-  return breadcrumb;
+	return breadcrumb;
 };
 
 // Sync offline notes when back online
 export const syncOfflineNotes = async () => {
-  const offline = offlineNotes();
-  if (offline.length === 0 || !isOnline()) {
-    return;
-  }
+	const offline = offlineNotes();
+	if (offline.length === 0 || !isOnline()) {
+		return;
+	}
   
-  console.log(`Syncing ${offline.length} offline notes...`);
-  const syncedNotes = [];
-  const failedNotes = [];
+	console.log(`Syncing ${offline.length} offline notes...`);
+	const syncedNotes = [];
+	const failedNotes = [];
   
-  for (const note of offline) {
-    try {
-      const { id, isOffline, ...noteData } = note;
-      const syncedNote = await apiCall('/notes', {
-        method: 'POST',
-        body: JSON.stringify(noteData)
-      });
-      syncedNotes.push(syncedNote);
-    } catch (err) {
-      console.error('Failed to sync note:', err);
-      failedNotes.push(note);
-    }
-  }
+	for (const note of offline) {
+		try {
+			const { id, isOffline, ...noteData } = note;
+			const syncedNote = await apiCall("/notes", {
+				method: "POST",
+				body: JSON.stringify(noteData)
+			});
+			syncedNotes.push(syncedNote);
+		} catch (err) {
+			console.error("Failed to sync note:", err);
+			failedNotes.push(note);
+		}
+	}
   
-  if (syncedNotes.length > 0) {
-    // Update online notes
-    const currentData = data();
-    setData({
-      ...currentData,
-      notes: [...currentData.notes, ...syncedNotes]
-    });
+	if (syncedNotes.length > 0) {
+		// Update online notes
+		const currentData = data();
+		setData({
+			...currentData,
+			notes: [...currentData.notes, ...syncedNotes]
+		});
     
-    // Keep only failed notes offline
-    setOfflineNotes(failedNotes);
-    saveOfflineNotes(failedNotes);
+		// Keep only failed notes offline
+		setOfflineNotes(failedNotes);
+		saveOfflineNotes(failedNotes);
     
-    // Update available tags
-    updateAvailableTags();
+		// Update available tags
+		updateAvailableTags();
     
-    console.log(`Successfully synced ${syncedNotes.length} notes, ${failedNotes.length} failed`);
-  }
+		console.log(`Successfully synced ${syncedNotes.length} notes, ${failedNotes.length} failed`);
+	}
 };
 
 // Get offline notes count
@@ -389,299 +389,299 @@ export const getOfflineNotesCount = () => offlineNotes().length;
 
 // Check if a note is offline
 export const isNoteOffline = (noteId) => {
-  return offlineNotes().some(note => note.id === noteId);
+	return offlineNotes().some(note => note.id === noteId);
 };
 
 // CRUD operations
 export const addItem = async (type, name, parentId = null) => {
-  console.log('Store - addItem called with:', { type, name, parentId });
-  try {
-    setLoading(true);
-    console.log('Store - Making API call to:', `/${type}s`);
+	console.log("Store - addItem called with:", { type, name, parentId });
+	try {
+		setLoading(true);
+		console.log("Store - Making API call to:", `/${type}s`);
     
-    const newItem = await apiCall(`/${type}s`, {
-      method: 'POST',
-      body: JSON.stringify({ name, parentId })
-    });
+		const newItem = await apiCall(`/${type}s`, {
+			method: "POST",
+			body: JSON.stringify({ name, parentId })
+		});
     
-    console.log('Store - API call successful, response:', newItem);
-    console.log('Store - Reloading data...');
+		console.log("Store - API call successful, response:", newItem);
+		console.log("Store - Reloading data...");
     
-    // Force reload all data to ensure consistency
-    await loadData();
+		// Force reload all data to ensure consistency
+		await loadData();
     
-    console.log('Store - Data reloaded successfully');
-    return newItem;
-  } catch (err) {
-    console.error('Store - Failed to add item:', err);
-    throw err;
-  } finally {
-    setLoading(false);
-  }
+		console.log("Store - Data reloaded successfully");
+		return newItem;
+	} catch (err) {
+		console.error("Store - Failed to add item:", err);
+		throw err;
+	} finally {
+		setLoading(false);
+	}
 };
 
 export const addNote = async (content, attachedToId, attachedToType, tags = [], files = []) => {  
-  try {
-    setLoading(true);
+	try {
+		setLoading(true);
     
-    // Try to save online first
-    if (isOnline()) {
-      try {
-        const newNote = await apiCall('/notes', {
-          method: 'POST',
-          body: JSON.stringify({ content, attachedToId, attachedToType, tags })
-        });
+		// Try to save online first
+		if (isOnline()) {
+			try {
+				const newNote = await apiCall("/notes", {
+					method: "POST",
+					body: JSON.stringify({ content, attachedToId, attachedToType, tags })
+				});
         
-        // If there are files to upload, upload them
-        if (files && files.length > 0) {
-          console.log(`Uploading ${files.length} files for note ${newNote.id}`);
-          for (const file of files) {
-            console.log(`Uploading file: ${file.name}, size: ${file.size}`);
-            const formData = new FormData();
-            formData.append('file', file);
+				// If there are files to upload, upload them
+				if (files && files.length > 0) {
+					console.log(`Uploading ${files.length} files for note ${newNote.id}`);
+					for (const file of files) {
+						console.log(`Uploading file: ${file.name}, size: ${file.size}`);
+						const formData = new FormData();
+						formData.append("file", file);
             
-            const token = localStorage.getItem('healthcare_token');
-            const response = await fetch(`${API_BASE}/notes/${newNote.id}/attachments`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${token}`
-              },
-              body: formData
-            });
+						const token = localStorage.getItem("healthcare_token");
+						const response = await fetch(`${API_BASE}/notes/${newNote.id}/attachments`, {
+							method: "POST",
+							headers: {
+								"Authorization": `Bearer ${token}`
+							},
+							body: formData
+						});
             
-            if (!response.ok) {
-              const errorText = await response.text();
-              console.error(`Failed to upload file: ${file.name}`, response.status, errorText);
-              // Continue with other files even if one fails
-            } else {
-              const result = await response.json();
-              console.log(`Successfully uploaded file: ${file.name}`, result);
-            }
-          }
-        } else {
-          console.log('No files to upload');
-        }
+						if (!response.ok) {
+							const errorText = await response.text();
+							console.error(`Failed to upload file: ${file.name}`, response.status, errorText);
+							// Continue with other files even if one fails
+						} else {
+							const result = await response.json();
+							console.log(`Successfully uploaded file: ${file.name}`, result);
+						}
+					}
+				} else {
+					console.log("No files to upload");
+				}
         
-        // Update local state
-        const currentData = data();
-        setData({
-          ...currentData,
-          notes: [...currentData.notes, newNote]
-        });
+				// Update local state
+				const currentData = data();
+				setData({
+					...currentData,
+					notes: [...currentData.notes, newNote]
+				});
         
-        // Update available tags
-        updateAvailableTags();
+				// Update available tags
+				updateAvailableTags();
         
-        return newNote;
-      } catch (apiErr) {
-        console.warn('API call failed, saving offline:', apiErr);
-        // Fall through to offline save
-      }
-    }
+				return newNote;
+			} catch (apiErr) {
+				console.warn("API call failed, saving offline:", apiErr);
+				// Fall through to offline save
+			}
+		}
     
-    // Save offline if API fails or we're offline
-    const offlineNote = {
-      id: `offline-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      content,
-      attachedToId,
-      attachedToType,
-      tags,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      isOffline: true
-    };
+		// Save offline if API fails or we're offline
+		const offlineNote = {
+			id: `offline-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+			content,
+			attachedToId,
+			attachedToType,
+			tags,
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
+			isOffline: true
+		};
     
-    const currentOfflineNotes = offlineNotes();
-    const updatedOfflineNotes = [...currentOfflineNotes, offlineNote];
-    setOfflineNotes(updatedOfflineNotes);
-    saveOfflineNotes(updatedOfflineNotes);
+		const currentOfflineNotes = offlineNotes();
+		const updatedOfflineNotes = [...currentOfflineNotes, offlineNote];
+		setOfflineNotes(updatedOfflineNotes);
+		saveOfflineNotes(updatedOfflineNotes);
     
-    // Update available tags
-    updateAvailableTags();
+		// Update available tags
+		updateAvailableTags();
     
-    return offlineNote;
-  } catch (err) {
-    console.error('Failed to add note:', err);
-    throw err;
-  } finally {
-    setLoading(false);
-  }
+		return offlineNote;
+	} catch (err) {
+		console.error("Failed to add note:", err);
+		throw err;
+	} finally {
+		setLoading(false);
+	}
 };
 
 export const updateNote = async (noteId, content, tags = [], files = []) => {
-  try {
-    setLoading(true);
+	try {
+		setLoading(true);
     
-    // First update the note content and tags
-    const updatedNote = await apiCall(`/notes/${noteId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ content, tags })
-    });
+		// First update the note content and tags
+		const updatedNote = await apiCall(`/notes/${noteId}`, {
+			method: "PUT",
+			body: JSON.stringify({ content, tags })
+		});
     
-    // If there are files to upload, upload them
-    if (files && files.length > 0) {
-      console.log(`Uploading ${files.length} files for note ${noteId} (update)`);
-      for (const file of files) {
-        console.log(`Uploading file: ${file.name}, size: ${file.size}`);
-        const formData = new FormData();
-        formData.append('file', file);
+		// If there are files to upload, upload them
+		if (files && files.length > 0) {
+			console.log(`Uploading ${files.length} files for note ${noteId} (update)`);
+			for (const file of files) {
+				console.log(`Uploading file: ${file.name}, size: ${file.size}`);
+				const formData = new FormData();
+				formData.append("file", file);
         
-        const token = localStorage.getItem('healthcare_token');
-        const response = await fetch(`${API_BASE}/notes/${noteId}/attachments`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData
-        });
+				const token = localStorage.getItem("healthcare_token");
+				const response = await fetch(`${API_BASE}/notes/${noteId}/attachments`, {
+					method: "POST",
+					headers: {
+						"Authorization": `Bearer ${token}`
+					},
+					body: formData
+				});
         
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Failed to upload file: ${file.name}`, response.status, errorText);
-          throw new Error(`Failed to upload file: ${file.name}`);
-        } else {
-          const result = await response.json();
-          console.log(`Successfully uploaded file: ${file.name}`, result);
-        }
-      }
-    } else {
-      console.log('No files to upload in update');
-    }
+				if (!response.ok) {
+					const errorText = await response.text();
+					console.error(`Failed to upload file: ${file.name}`, response.status, errorText);
+					throw new Error(`Failed to upload file: ${file.name}`);
+				} else {
+					const result = await response.json();
+					console.log(`Successfully uploaded file: ${file.name}`, result);
+				}
+			}
+		} else {
+			console.log("No files to upload in update");
+		}
     
-    // Update local state
-    const currentData = data();
-    const updatedNotes = currentData.notes.map(note =>
-      note.id === noteId ? updatedNote : note
-    );
+		// Update local state
+		const currentData = data();
+		const updatedNotes = currentData.notes.map(note =>
+			note.id === noteId ? updatedNote : note
+		);
     
-    setData({
-      ...currentData,
-      notes: updatedNotes
-    });
+		setData({
+			...currentData,
+			notes: updatedNotes
+		});
     
-    // Update available tags
-    updateAvailableTags();
+		// Update available tags
+		updateAvailableTags();
     
-    return updatedNote;
-  } catch (err) {
-    console.error('Failed to update note:', err);
-    throw err;
-  } finally {
-    setLoading(false);
-  }
+		return updatedNote;
+	} catch (err) {
+		console.error("Failed to update note:", err);
+		throw err;
+	} finally {
+		setLoading(false);
+	}
 };
 
 export const deleteNote = async (noteId) => {
-  try {
-    setLoading(true);
-    await apiCall(`/notes/${noteId}`, {
-      method: 'DELETE'
-    });
+	try {
+		setLoading(true);
+		await apiCall(`/notes/${noteId}`, {
+			method: "DELETE"
+		});
     
-    // Update local state
-    const currentData = data();
-    const filteredNotes = currentData.notes.filter(note => note.id !== noteId);
+		// Update local state
+		const currentData = data();
+		const filteredNotes = currentData.notes.filter(note => note.id !== noteId);
     
-    setData({
-      ...currentData,
-      notes: filteredNotes
-    });
-  } catch (err) {
-    console.error('Failed to delete note:', err);
-    throw err;
-  } finally {
-    setLoading(false);
-  }
+		setData({
+			...currentData,
+			notes: filteredNotes
+		});
+	} catch (err) {
+		console.error("Failed to delete note:", err);
+		throw err;
+	} finally {
+		setLoading(false);
+	}
 };
 
 export const updateItem = async (type, itemId, name) => {
-  try {
-    setLoading(true);
-    const updatedItem = await apiCall(`/${type}s/${itemId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ name })
-    });
+	try {
+		setLoading(true);
+		const updatedItem = await apiCall(`/${type}s/${itemId}`, {
+			method: "PUT",
+			body: JSON.stringify({ name })
+		});
     
-    // Update local state
-    const currentData = data();
-    const typeKey = type + 's';
-    const updatedItems = currentData[typeKey].map(item =>
-      item.id === itemId ? updatedItem : item
-    );
+		// Update local state
+		const currentData = data();
+		const typeKey = type + "s";
+		const updatedItems = currentData[typeKey].map(item =>
+			item.id === itemId ? updatedItem : item
+		);
     
-    setData({
-      ...currentData,
-      [typeKey]: updatedItems
-    });
+		setData({
+			...currentData,
+			[typeKey]: updatedItems
+		});
     
-    return updatedItem;
-  } catch (err) {
-    console.error('Failed to update item:', err);
-    throw err;
-  } finally {
-    setLoading(false);
-  }
+		return updatedItem;
+	} catch (err) {
+		console.error("Failed to update item:", err);
+		throw err;
+	} finally {
+		setLoading(false);
+	}
 };
 
 export const deleteItem = async (type, itemId) => {
-  try {
-    setLoading(true);
-    await apiCall(`/${type}s/${itemId}`, {
-      method: 'DELETE'
-    });
+	try {
+		setLoading(true);
+		await apiCall(`/${type}s/${itemId}`, {
+			method: "DELETE"
+		});
     
-    // Reload all data to reflect cascading deletes
-    await loadData();
+		// Reload all data to reflect cascading deletes
+		await loadData();
     
-    // Clear selection if the deleted item was selected
-    if (selectedItem()?.id === itemId) {
-      setSelectedItem(null);
-      setSelectedType(null);
-    }
-  } catch (err) {
-    console.error('Failed to delete item:', err);
-    throw err;
-  } finally {
-    setLoading(false);
-  }
+		// Clear selection if the deleted item was selected
+		if (selectedItem()?.id === itemId) {
+			setSelectedItem(null);
+			setSelectedType(null);
+		}
+	} catch (err) {
+		console.error("Failed to delete item:", err);
+		throw err;
+	} finally {
+		setLoading(false);
+	}
 };
 
 // Computed values
 export const hierarchyTree = createMemo(() => {
-  const organisations = getItemsByType('organisation');
+	const organisations = getItemsByType("organisation");
   
-  return organisations.map(org => ({
-    ...org,
-    children: getChildItems(org.id, 'team').map(team => ({
-      ...team,
-      children: getChildItems(team.id, 'client').map(client => ({
-        ...client,
-        children: getChildItems(client.id, 'episode')
-      }))
-    }))
-  }));
+	return organisations.map(org => ({
+		...org,
+		children: getChildItems(org.id, "team").map(team => ({
+			...team,
+			children: getChildItems(team.id, "client").map(client => ({
+				...client,
+				children: getChildItems(client.id, "episode")
+			}))
+		}))
+	}));
 
 });
 
 // Export signals
 export { 
-  data, 
-  selectedItem, 
-  setSelectedItem, 
-  selectedType, 
-  setSelectedType, 
-  loading, 
-  error, 
-  loadData,
-  searchQuery,
-  setSearchQuery,
-  searchResults,
-  isSearching,
-  selectedTags,
-  setSelectedTags,
-  availableTags,
-  setAvailableTags,
-  offlineNotes,
-  isOnline,
-  clearOfflineNotes
+	data, 
+	selectedItem, 
+	setSelectedItem, 
+	selectedType, 
+	setSelectedType, 
+	loading, 
+	error, 
+	loadData,
+	searchQuery,
+	setSearchQuery,
+	searchResults,
+	isSearching,
+	selectedTags,
+	setSelectedTags,
+	availableTags,
+	setAvailableTags,
+	offlineNotes,
+	isOnline,
+	clearOfflineNotes
 };
